@@ -1,12 +1,16 @@
 import { useEffect, useMemo } from 'react'
-import { Sparkles } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useOmniStore, flattenOmniItems, getOmniPlaceholders } from '@/store/omni.store'
 import { modKeyLabel } from '@/lib/platform'
 import { cn } from '@/lib/cn'
 import { OmniResults } from '@/ui/OmniResults'
 import { insertOmniItem } from '@/lib/omni-insert'
 
-export function OmniBar() {
+type Props = {
+  variant?: 'floating' | 'inline'
+}
+
+export function OmniBar({ variant = 'floating' }: Props) {
   const open = useOmniStore((s) => s.open)
   const query = useOmniStore((s) => s.query)
   const setOpen = useOmniStore((s) => s.setOpen)
@@ -20,6 +24,7 @@ export function OmniBar() {
 
   const placeholders = getOmniPlaceholders()
   const flat = useMemo(() => flattenOmniItems(sections), [sections])
+  const inline = variant === 'inline'
 
   useEffect(() => {
     const id = window.setInterval(tickPlaceholder, 4000)
@@ -27,11 +32,11 @@ export function OmniBar() {
   }, [tickPlaceholder])
 
   return (
-    <div className={cn('omni-bar-root', open && 'omni-bar-root-open')}>
+    <div className={cn('omni-bar-root', inline && 'omni-bar-root-inline', open && 'omni-bar-root-open')}>
       <div className="omni-bar-shell">
-        <Sparkles className="omni-bar-sparkle h-5 w-5 shrink-0" aria-hidden />
+        <Search className="omni-bar-icon h-4 w-4 shrink-0" aria-hidden />
         <input
-          type="text"
+          type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setOpen(true)}
@@ -53,12 +58,12 @@ export function OmniBar() {
             }
             if (e.key === 'Escape') setOpen(false)
           }}
-          placeholder={placeholders[placeholderIdx]}
+          placeholder={inline ? 'Search images, GIFs, widgets, links…' : placeholders[placeholderIdx]}
           className="omni-bar-input flex-1"
           aria-label="Universal search"
           aria-expanded={open}
         />
-        <kbd className="omni-bar-kbd hidden sm:inline">{modKeyLabel()}K</kbd>
+        <kbd className="omni-bar-kbd hidden lg:inline">{modKeyLabel()}K</kbd>
       </div>
 
       {open && (

@@ -1,28 +1,44 @@
-import { type FormEvent, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { type FormEvent, useEffect, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Logo } from '@/ui/Logo'
 import { useAuthStore } from '@/store/auth.store'
+import '@/styles/landing.css'
 
 export function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
   const login = useAuthStore((s) => s.login)
+  const fetchMe = useAuthStore((s) => s.fetchMe)
   const loading = useAuthStore((s) => s.loading)
   const error = useAuthStore((s) => s.error)
+  const user = useAuthStore((s) => s.user)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+
+  useEffect(() => {
+    void fetchMe()
+  }, [fetchMe])
+
+  useEffect(() => {
+    if (user) {
+      const from = (location.state as { from?: string } | null)?.from ?? '/edit'
+      navigate(from, { replace: true })
+    }
+  }, [user, location.state, navigate])
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
     try {
       await login(username, password)
-      navigate('/edit')
+      const from = (location.state as { from?: string } | null)?.from ?? '/edit'
+      navigate(from, { replace: true })
     } catch {
       /* error in store */
     }
   }
 
   return (
-    <div className="page-shell flex min-h-[100dvh] items-center justify-center p-6">
+    <div className="landing-page flex min-h-[100dvh] items-center justify-center p-6">
       <div className="surface-card w-full max-w-[400px] p-10">
         <Logo size="md" to="/" className="mb-6 [&_span]:text-[var(--text-primary)]" showText />
         <h1 className="font-display text-[32px] leading-tight">Open my wall</h1>
@@ -52,8 +68,8 @@ export function Login() {
               className="mt-1 h-11 w-full rounded-[var(--r-md)] border border-[var(--bg-muted)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button type="submit" disabled={loading} className="btn-primary h-11 w-full">
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          <button type="submit" disabled={loading} className="btn-neon h-11 w-full">
             {loading ? 'Opening…' : 'Open my wall'}
           </button>
         </form>

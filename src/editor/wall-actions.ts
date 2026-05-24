@@ -44,6 +44,12 @@ type WallShapeLike = {
   meta?: Record<string, unknown>
 }
 
+function shapeUrl(props: Record<string, unknown>): string {
+  const u = props.url
+  if (typeof u === 'string' && u.length > 0) return u
+  return 'Link'
+}
+
 function shapeLabel(shape: WallShapeLike): string {
   const props = shape.props as Record<string, unknown>
   const rt = props.richText as { content?: Array<{ content?: Array<{ text?: string }> }> } | undefined
@@ -76,7 +82,7 @@ function shapeLabel(shape: WallShapeLike): string {
     return data.caption ?? 'Polaroid'
   }
   if (meta?.wallType === 'qr') return 'QR code'
-  if (shape.type === 'embed' || shape.type === 'bookmark') return String(props.url ?? 'Link')
+  if (shape.type === 'embed' || shape.type === 'bookmark') return shapeUrl(props)
   if (shape.type === 'image') return String(props.altText ?? 'Image')
   if (shape.type === 'note') return 'Sticky note'
   if (shape.type === 'draw') return 'Drawing'

@@ -1,223 +1,207 @@
 /**
- * Landing page — hero, live demo canvas, example walls, feature cards.
- * Demo canvas uses in-memory state only (id: demo, never persisted).
+ * Landing — dark neon marketing page inspired by Linktree-style sections.
  */
-import { useEffect, useState, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
-import { Sparkles, Layers, Wifi, Share2 } from 'lucide-react'
-import { Logo } from '@/ui/Logo'
-import { useCanvasStore } from '@/store/canvas.store'
-import { DEMO_CANVAS_ID } from '@/persist/constants'
-import {
-  createEmptyCanvas,
-  createImageElement,
-  createLinkElement,
-  createTextElement,
-  type CanvasDoc,
-  type ThemeId,
-} from '@/types/canvas'
-import { getTheme } from '@/themes'
+import { useEffect } from 'react'
+import { ArrowRight, BarChart3, Layers, Share2, Sparkles, Target, Wifi } from 'lucide-react'
+import { SiteHeader } from '@/ui/SiteHeader'
+import { SiteFooter } from '@/ui/SiteFooter'
+import { LandingCanvasShowcase } from '@/ui/LandingCanvasShowcase'
+import { useAuthStore } from '@/store/auth.store'
+import '@/styles/landing.css'
 
-const WallTldrawEditor = lazy(() =>
-  import('@/editor/WallTldrawEditor').then((m) => ({ default: m.WallTldrawEditor })),
-)
-
-/** Pre-built stickies for the landing demo — resets on "Reset demo" */
-const DEMO_ELEMENTS = [
-  createTextElement(120, 140, 'Welcome to your wall 👋'),
-  createTextElement(420, 280, 'Drag me around!\nTap to edit text.'),
-  createLinkElement(800, 160, 'https://github.com', {
-    title: 'GitHub',
-    description: 'Where the world builds software',
-  }),
-  createImageElement(
-    900,
-    420,
-    'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80',
-    'Abstract art',
-  ),
+const TEMPLATES = [
+  { author: 'alex', title: 'Now Page', tag: 'IndieWeb', gradient: 'from-sky-500/40 to-transparent' },
+  { author: 'sam', title: 'Portfolio', tag: 'GitHub Readme', gradient: 'from-violet-500/40 to-transparent' },
+  { author: 'jamie', title: 'Event Flyer', tag: 'Embed System', gradient: 'from-amber-500/40 to-transparent' },
 ]
 
-/** Showcase cards — live gist walls ship in Phase 2 */
-const EXAMPLE_WALLS: Array<{
-  title: string
-  author: string
-  theme: ThemeId
-  description: string
-}> = [
-  {
-    title: 'Now Page',
-    author: 'alex',
-    theme: 'whiteboard',
-    description: 'What I’m focused on this month — links, goals, and a photo.',
-  },
-  {
-    title: 'Portfolio',
-    author: 'sam',
-    theme: 'glass',
-    description: 'Projects, GitHub links, and a short bio sticky.',
-  },
-  {
-    title: 'Event Flyer',
-    author: 'jamie',
-    theme: 'corkboard',
-    description: 'Date, venue, QR code, and bold headline stickies.',
-  },
-]
-
-const FEATURES = [
-  {
-    icon: Layers,
-    title: 'One canvas',
-    body: 'Not Figma. Not Miro. One person, one wall — public to view, yours to edit.',
-  },
-  {
-    icon: Wifi,
-    title: 'Local-first',
-    body: 'Every save hits IndexedDB instantly. Works offline after the first load.',
-  },
-  {
-    icon: Share2,
-    title: 'Share anywhere',
-    body: 'Export PNG today. GitHub sync and live embeds coming in Phase 2.',
-  },
-]
-
-function buildDemoDoc(): CanvasDoc {
-  const doc = createEmptyCanvas(DEMO_CANVAS_ID)
-  doc.title = 'Demo Wall'
-  doc.theme = 'corkboard'
-  doc.elements = DEMO_ELEMENTS.map((el, i) => ({ ...el, z: i }))
-  return doc
-}
-
-/** Interactive demo — hydrates global store with demo id (no IndexedDB writes) */
-function DemoCanvas() {
-  const hydrate = useCanvasStore((s) => s.hydrate)
-
-  useEffect(() => {
-    hydrate(buildDemoDoc())
-  }, [hydrate])
-
-  return (
-    <div className="surface-card relative overflow-hidden shadow-glow sm:rounded-wall-lg">
-      <div className="absolute inset-x-0 top-0 z-10 border-b border-white/5 bg-black/30 px-4 py-2 text-center text-xs text-white/45 backdrop-blur-sm">
-        Live preview — drag stickies below
-      </div>
-      <div className="h-[min(420px,55vh)] min-h-[280px] pt-8 sm:h-[440px]">
-        <Suspense
-          fallback={
-            <div className="flex h-full items-center justify-center text-sm text-white/40">Loading demo…</div>
-          }
-        >
-          <WallTldrawEditor />
-        </Suspense>
-      </div>
-    </div>
-  )
-}
-
-function ExampleWallCard({ wall }: { wall: (typeof EXAMPLE_WALLS)[number] }) {
-  const theme = getTheme(wall.theme)
-  return (
-    <article className="surface-card group overflow-hidden transition hover:border-white/20 hover:shadow-wall">
-      <div
-        className="h-28 border-b border-white/5 transition group-hover:opacity-95 sm:h-32"
-        style={{ background: theme.background }}
-      />
-      <div className="p-4 sm:p-5">
-        <p className="text-xs font-medium text-wall-accent/90">@{wall.author}</p>
-        <h3 className="mt-1 font-display text-lg">{wall.title}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-white/55">{wall.description}</p>
-        <span className="mt-3 inline-block rounded-full bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-wider text-white/35">
-          Coming Phase 2
-        </span>
-      </div>
-    </article>
-  )
-}
+const TRUST = ['creators', 'developers', 'designers', 'founders', 'streamers', 'musicians']
 
 export function Landing() {
-  const [demoKey, setDemoKey] = useState(0)
+  const fetchMe = useAuthStore((s) => s.fetchMe)
+
+  useEffect(() => {
+    void fetchMe()
+  }, [fetchMe])
 
   return (
-    <div className="page-shell">
-      {/* Top navigation */}
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-wall-black/80 backdrop-blur-xl">
-        <nav className="mx-auto flex max-w-content items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <Logo size="md" />
-          <Link to="/edit" className="btn-primary shrink-0 px-4 py-2 text-sm sm:px-5">
-            Open editor
-          </Link>
-        </nav>
-      </header>
+    <div className="landing-page">
+      <SiteHeader />
 
-      <main className="mx-auto max-w-content px-4 pb-20 pt-10 sm:px-6 sm:pt-14">
-        {/* Hero */}
-        <section className="mb-14 text-center sm:mb-20">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-wall-accent/20 bg-wall-accent/10 px-3 py-1 text-xs font-medium text-wall-accent-light">
-            <Sparkles className="h-3.5 w-3.5" />
-            Personal noticeboard for the open web
+      <main>
+        <section className="landing-hero">
+          <div className="landing-hero-inner">
+            <p className="landing-eyebrow">
+              <Sparkles className="h-4 w-4" aria-hidden />
+              Personal noticeboard for the open web
+            </p>
+            <h1 className="landing-headline">
+              Built
+              <br />
+              for you.
+            </h1>
+            <p className="landing-lead">
+              Create high-contrast dynamic noticeboard walls. Share them everywhere. Our image endpoint
+              automatically updates every linked embed on GitHub, personal pages, or signatures.
+            </p>
+            <div className="landing-hero-cta">
+              <Link to="/signup" className="btn-neon">
+                Get started for free
+              </Link>
+              <a href="#canvas" className="btn-outline">
+                Explore live canvas
+              </a>
+            </div>
           </div>
-          <h1 className="font-display text-4xl leading-[1.1] tracking-tight sm:text-5xl md:text-6xl">
-            A living wall for
-            <br className="hidden sm:block" />
-            <span className="text-wall-accent-light"> the open web</span>
-          </h1>
-          <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-white/55 sm:text-lg">
-            Drag stickers, photos, and links onto your board. Share it as a link or a self-updating
-            image embed.
+        </section>
+
+        <section className="landing-section landing-canvas-section">
+          <LandingCanvasShowcase />
+          <p className="landing-section-note">
+            Sign in to edit your own wall — the canvas editor unlocks after login.
           </p>
-          <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-            <Link to="/edit" className="btn-primary w-full sm:w-auto">
-              Claim your wall
+        </section>
+
+        <section className="landing-section" id="features">
+          <div className="landing-bento">
+            <article className="landing-bento-card landing-bento-neon">
+              <Target className="landing-bento-icon" aria-hidden />
+              <h2>A living profile page that updates automatically.</h2>
+              <p>
+                Embed Spotify tracks, GitHub graphs, weather, and link previews on one 1600×1000 canvas —
+                then share a single URL.
+              </p>
+              <div className="landing-tags">
+                <span>#IndieWeb</span>
+                <span>#GithubReadme</span>
+              </div>
+            </article>
+            <article className="landing-bento-card landing-bento-dark">
+              <BarChart3 className="landing-bento-icon" aria-hidden />
+              <h2>Granular controls. Real widgets.</h2>
+              <p>
+                Drag sticky notes, images, QR codes, and live widgets. Inspector tools for angle, layers,
+                gradients, and standalone embeds.
+              </p>
+              <div className="landing-tags">
+                <span>#NixtioGrid</span>
+                <span>#EmbedSystem</span>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section className="landing-section landing-split">
+          <div className="landing-split-copy">
+            <h2>Share your wall anywhere you like.</h2>
+            <p>
+              Add your unique Wall URL to GitHub READMEs, Linktree bios, email signatures, and personal
+              sites. One canvas — every channel stays in sync.
+            </p>
+            <Link to="/signup" className="btn-neon inline-flex items-center gap-2">
+              Get started for free
+              <ArrowRight className="h-4 w-4" />
             </Link>
-            <button type="button" onClick={() => setDemoKey((k) => k + 1)} className="btn-ghost w-full sm:w-auto">
-              Reset demo
-            </button>
+          </div>
+          <div className="landing-split-visual">
+            <div className="landing-share-stack">
+              <span>README.md</span>
+              <span>link.bio</span>
+              <span>email sig</span>
+              <span className="landing-share-highlight">wall.app/you</span>
+            </div>
           </div>
         </section>
 
-        {/* Live demo */}
-        <section className="mb-16 sm:mb-20">
-          <div key={demoKey}>
-            <DemoCanvas />
+        <section className="landing-section landing-split landing-split-reverse">
+          <div className="landing-split-visual landing-stats-grid">
+            <div>
+              <strong>6.4k</strong>
+              <span>views</span>
+            </div>
+            <div>
+              <strong>3.2k</strong>
+              <span>clicks</span>
+            </div>
+            <div>
+              <strong>98%</strong>
+              <span>uptime</span>
+            </div>
+            <div>
+              <strong>24</strong>
+              <span>widgets</span>
+            </div>
           </div>
-          <p className="mt-3 text-center text-xs text-white/35">
-            Nothing leaves your browser until you save in the editor.
-          </p>
+          <div className="landing-split-copy">
+            <h2>Analyze engagement and keep your wall alive.</h2>
+            <p>
+              Privacy-first view pings, reactions, and widget stats. Every save hits IndexedDB instantly —
+              works offline after the first load.
+            </p>
+            <Link to="/signup" className="btn-neon inline-flex items-center gap-2">
+              Claim your wall
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </section>
 
-        {/* Example walls grid */}
-        <section className="mb-16 sm:mb-20">
-          <h2 className="font-display text-2xl sm:text-3xl">Example walls</h2>
-          <p className="mt-2 max-w-md text-sm text-white/45">
-            Inspiration for what you can build — portfolio, now page, event flyer.
-          </p>
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {EXAMPLE_WALLS.map((wall) => (
-              <ExampleWallCard key={wall.author} wall={wall} />
+        <section className="landing-section landing-trust">
+          <h2>
+            The living canvas trusted by <span className="landing-trust-accent">{TRUST[0]}</span>
+          </h2>
+          <div className="landing-trust-row">
+            {TRUST.map((word) => (
+              <span key={word} className="landing-trust-pill">
+                {word}
+              </span>
             ))}
           </div>
         </section>
 
-        {/* Feature highlights */}
-        <section className="grid gap-4 sm:grid-cols-3 sm:gap-5">
-          {FEATURES.map(({ icon: Icon, title, body }) => (
-            <div key={title} className="surface-card p-5 sm:p-6">
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-wall bg-wall-accent/15 text-wall-accent">
-                <Icon className="h-5 w-5" />
-              </div>
-              <h3 className="font-medium">{title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-white/55">{body}</p>
-            </div>
+        <section className="landing-section" id="templates">
+          <div className="landing-section-head">
+            <h2>Example walls</h2>
+            <p>Portfolio, now page, or event flyer — start from a template after you sign in.</p>
+          </div>
+          <div className="landing-template-grid">
+            {TEMPLATES.map((t) => (
+              <article key={t.author} className="landing-template-card">
+                <div className={`landing-template-art bg-gradient-to-b ${t.gradient}`} />
+                <div className="landing-template-body">
+                  <p className="landing-template-user">@{t.author}</p>
+                  <h3>{t.title}</h3>
+                  <span className="landing-template-tag">{t.tag}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="landing-section landing-features-row">
+          {[
+            { icon: Layers, title: 'One canvas', body: 'One person, one wall — public to view, yours to edit.' },
+            { icon: Wifi, title: 'Local-first', body: 'IndexedDB saves instantly. Offline after first load.' },
+            { icon: Share2, title: 'Share anywhere', body: 'PNG export, live embeds, and Wall Live protocol.' },
+          ].map(({ icon: Icon, title, body }) => (
+            <article key={title} className="landing-feature-card">
+              <Icon className="h-5 w-5 text-[#beee1d]" aria-hidden />
+              <h3>{title}</h3>
+              <p>{body}</p>
+            </article>
           ))}
+        </section>
+
+        <section className="landing-section landing-final-cta">
+          <h2>Jumpstart your corner of the internet today.</h2>
+          <Link to="/signup" className="btn-neon btn-neon-lg">
+            Get started for free
+          </Link>
         </section>
       </main>
 
-      <footer className="border-t border-white/5 py-8 text-center text-sm text-white/35">
-        No signup required to play. GitHub only when you want to save publicly.
-      </footer>
+      <SiteFooter />
     </div>
   )
 }
+

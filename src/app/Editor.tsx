@@ -3,7 +3,7 @@
  */
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, Share2, Sparkles, Undo2, Redo2, LayoutGrid } from 'lucide-react'
+import { Share2, Sparkles, Undo2, Redo2, LayoutGrid } from 'lucide-react'
 import { WallTldrawEditor } from '@/editor/WallTldrawEditor'
 import { Dock } from '@/ui/Dock'
 import { HelpOverlay } from '@/ui/HelpOverlay'
@@ -12,7 +12,6 @@ import { useCanvasStore } from '@/store/canvas.store'
 import { useUiStore } from '@/store/ui.store'
 import { loadCanvas, LOCAL_CANVAS_ID } from '@/persist/db'
 import { createEmptyCanvas } from '@/types/canvas'
-import { modKeyLabel } from '@/lib/platform'
 import { handleTldrawPaste } from '@/lib/paste-handler'
 import { getWallEditor, onHistoryChange } from '@/editor/wall-editor-api'
 import { wallActions } from '@/editor/wall-actions'
@@ -162,21 +161,22 @@ export function Editor() {
 
   return (
     <div className="wall-editor-shell relative flex h-[100dvh] flex-col">
-      <header className="wall-editor-header relative z-40 flex shrink-0 items-center justify-between gap-3 px-4 py-3 sm:px-6 pt-[calc(5rem+env(safe-area-inset-top))] sm:pt-[5.5rem]">
-        <div className="flex min-w-0 items-center gap-3">
-          <Link to="/" className="wall-editor-title flex shrink-0 items-center gap-1.5 text-lg font-black">
-            <span className="text-xl">🧱</span> WALL
-          </Link>
-          <span className="hidden text-white/15 sm:inline">|</span>
-          <input
-            type="text"
-            value={doc.title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="min-w-0 max-w-[200px] truncate border-b border-transparent bg-transparent text-xs font-extrabold uppercase tracking-wider text-white outline-none transition hover:border-white/10 focus:border-[#beee1d] sm:max-w-xs sm:text-sm"
-          />
-        </div>
+      <header className="wall-editor-header relative z-40 flex shrink-0 flex-col gap-3 px-4 py-3 sm:px-6 pt-[calc(0.75rem+env(safe-area-inset-top))]">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link to="/" className="wall-editor-title flex shrink-0 items-center gap-1.5 text-lg font-black">
+              <span className="text-xl">🧱</span> WALL
+            </Link>
+            <span className="hidden text-white/15 sm:inline">|</span>
+            <input
+              type="text"
+              value={doc.title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="min-w-0 max-w-[140px] truncate border-b border-transparent bg-transparent text-xs font-extrabold uppercase tracking-wider text-white outline-none transition hover:border-white/10 focus:border-[#beee1d] sm:max-w-[200px] sm:text-sm"
+            />
+          </div>
 
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <div className="hidden items-center gap-0.5 rounded-full border border-white/5 bg-black/40 p-1 lg:flex">
             <button
               type="button"
@@ -212,15 +212,6 @@ export function Editor() {
 
           <button
             type="button"
-            onClick={() => setShowCommandPalette(true)}
-            className="wall-btn-ghost hidden items-center gap-2 px-3 py-2 text-xs font-bold sm:flex"
-          >
-            <Search className="h-3.5 w-3.5" />
-            <span className="text-white/50">Search ({modKeyLabel()}K)</span>
-          </button>
-
-          <button
-            type="button"
             onClick={() => {
               if (!user) {
                 navigate('/login')
@@ -241,18 +232,17 @@ export function Editor() {
 
           {user ? (
             <button type="button" onClick={logout} className="hidden text-xs text-neutral-500 hover:text-white sm:inline">
-              Log out
+              Log out ({user.username})
             </button>
-          ) : (
-            <Link to="/login" className="hidden text-xs text-neutral-500 hover:text-[#beee1d] sm:inline">
-              Sign in
-            </Link>
-          )}
+          ) : null}
 
           <span className="hidden text-[10px] text-neutral-600 lg:inline">
             {saveStatus === 'saving' ? 'Saving…' : 'Saved'}
           </span>
         </div>
+        </div>
+
+        <OmniBar variant="inline" />
       </header>
 
       <div className="relative min-h-0 flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
@@ -261,7 +251,7 @@ export function Editor() {
         <SessionTimeline />
       </div>
 
-      <OmniBar />
+
       <Dock />
       <HelpOverlay />
       <Suspense fallback={null}>

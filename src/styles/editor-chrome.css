@@ -155,7 +155,7 @@
 /* Inspector HUD */
 .wall-editor-hud {
   position: fixed;
-  top: calc(5.5rem + env(safe-area-inset-top));
+  top: calc(7.5rem + env(safe-area-inset-top));
   left: 50%;
   z-index: 48;
   width: min(100%, 960px);

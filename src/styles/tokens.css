@@ -1,30 +1,30 @@
 /**
- * Warm Bento-style design tokens — single source of truth for colors, shadows, radii.
+ * Design tokens — dark neon default, aligned with editor chrome.
  */
 :root {
-  --bg-page: #faf8f5;
-  --bg-surface: #ffffff;
-  --bg-subtle: #f4f1ec;
-  --bg-muted: #ede8e0;
-  --wall-paper: #fbf7ef;
-  --wall-cork: #c8a276;
-  --wall-linen: #f0ebe0;
-  --text-primary: #1a1814;
-  --text-secondary: #5c5852;
-  --text-tertiary: #8e8a82;
-  --accent: #ff6b35;
-  --accent-soft: #ffe4d6;
-  --accent-text: #b84a1e;
-  --sticky-yellow: #ffe89a;
+  --bg-page: #050508;
+  --bg-surface: #0a0a0f;
+  --bg-subtle: #141419;
+  --bg-muted: #1f1f26;
+  --wall-paper: #0a0a0f;
+  --wall-cork: #3d2e1a;
+  --wall-linen: #141419;
+  --text-primary: #fafafa;
+  --text-secondary: rgba(255, 255, 255, 0.55);
+  --text-tertiary: rgba(255, 255, 255, 0.35);
+  --accent: #beee1d;
+  --accent-soft: rgba(190, 238, 29, 0.12);
+  --accent-text: #beee1d;
+  --sticky-yellow: #fef08a;
   --sticky-pink: #ffd0d8;
   --sticky-blue: #c8dcff;
   --sticky-green: #bfe5c8;
   --sticky-peach: #ffd4b8;
   --sticky-lilac: #ddd0ff;
-  --shadow-sm: 0 1px 2px rgba(60, 50, 40, 0.04), 0 1px 3px rgba(60, 50, 40, 0.06);
-  --shadow-md: 0 4px 8px rgba(60, 50, 40, 0.06), 0 8px 16px rgba(60, 50, 40, 0.08);
-  --shadow-lg: 0 12px 24px rgba(60, 50, 40, 0.08), 0 20px 40px rgba(60, 50, 40, 0.1);
-  --shadow-sticky: 2px 3px 6px rgba(60, 50, 40, 0.12), 4px 6px 14px rgba(60, 50, 40, 0.08);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.5);
+  --shadow-sticky: 2px 3px 6px rgba(0, 0, 0, 0.25);
   --r-sm: 8px;
   --r-md: 12px;
   --r-lg: 18px;
@@ -33,14 +33,4 @@
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --dur-fast: 120ms;
   --dur-base: 200ms;
-}
-
-[data-theme='dark'] {
-  --bg-page: #1a1814;
-  --bg-surface: #24211c;
-  --bg-subtle: #2d2924;
-  --bg-muted: #3a3530;
-  --text-primary: #faf8f5;
-  --text-secondary: #b8b4ac;
-  --text-tertiary: #8e8a82;
 }

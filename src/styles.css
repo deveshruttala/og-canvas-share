@@ -36,10 +36,11 @@
 @layer components {
   /* Primary CTA — warm amber, works on dark backgrounds */
   .btn-primary {
-    @apply inline-flex items-center justify-center px-5 py-2.5 text-sm font-semibold shadow-[var(--shadow-sm)] transition active:scale-[0.98];
+    @apply inline-flex items-center justify-center px-5 py-2.5 text-sm font-semibold transition active:scale-[0.98];
     border-radius: var(--r-pill);
     background: var(--accent);
-    color: white;
+    color: #000;
+    font-weight: 800;
   }
 
   .btn-primary:hover {
@@ -48,19 +49,20 @@
 
   .btn-ghost {
     @apply inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium transition;
-    border-radius: var(--r-md);
-    border: 1.5px solid var(--text-primary);
+    border-radius: var(--r-pill);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     color: var(--text-primary);
     background: transparent;
   }
 
   .btn-ghost:hover {
-    background: var(--bg-subtle);
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(190, 238, 29, 0.3);
   }
 
   .surface-card {
     border-radius: var(--r-lg);
-    border: 1px solid rgba(60, 50, 40, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     background: var(--bg-surface);
     box-shadow: var(--shadow-md);
   }

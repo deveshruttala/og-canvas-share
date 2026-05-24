@@ -2,6 +2,7 @@
 import { lazy, Suspense, type ReactNode } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Landing } from '@/app/Landing'
+import { RequireAuth } from '@/app/RequireAuth'
 import { PageLoader } from '@/ui/PageLoader'
 
 const Editor = lazy(() => import('@/app/Editor').then((m) => ({ default: m.Editor })))
@@ -32,7 +33,7 @@ export function AppRoutes() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route path="/edit" element={<Lazy><Editor /></Lazy>} />
+        <Route path="/edit" element={<Lazy><RequireAuth><Editor /></RequireAuth></Lazy>} />
         <Route path="/u/:username" element={<Lazy><PublicViewer /></Lazy>} />
         <Route path="/signup" element={<Lazy><Signup /></Lazy>} />
         <Route path="/login" element={<Lazy><Login /></Lazy>} />

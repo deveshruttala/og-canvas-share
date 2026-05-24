@@ -9,7 +9,8 @@ function shapeText(shape: { type: string; props: Record<string, unknown> }): str
       .trim()
   }
   if (shape.type === 'embed' || shape.type === 'bookmark') {
-    return String(shape.props.url ?? '')
+    const u = shape.props.url
+    return typeof u === 'string' ? u : ''
   }
   if (shape.type === 'image') return String(shape.props.altText ?? 'image')
   const meta = shape as { meta?: { wallType?: string; wallData?: Record<string, unknown> } }

@@ -30,12 +30,12 @@ export function OmniResults({ sections, loading, activeIndex, onSelectIndex, onC
   if (!sections.length && !loading) {
     return (
       <div className="omni-results-panel">
-        <p className="px-4 py-8 text-center text-sm text-[var(--text-secondary)]">
+        <p className="px-4 py-8 text-center text-sm text-white/45">
           Type to search images, GIFs, audio, emojis, widgets, and links…
         </p>
         <button
           type="button"
-          className="mx-4 mb-3 text-left text-xs text-[var(--accent-text)] hover:underline"
+          className="mx-4 mb-3 text-left text-xs text-[#beee1d] hover:underline"
           onClick={() => {
             onClose()
             useUiStore.getState().setShowWidgetPicker(true)

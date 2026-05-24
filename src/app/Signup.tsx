@@ -2,6 +2,7 @@ import { type FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '@/ui/Logo'
 import { useAuthStore } from '@/store/auth.store'
+import '@/styles/landing.css'
 
 export function Signup() {
   const navigate = useNavigate()
@@ -23,7 +24,7 @@ export function Signup() {
   }
 
   return (
-    <div className="page-shell flex min-h-[100dvh] items-center justify-center p-6">
+    <div className="landing-page flex min-h-[100dvh] items-center justify-center p-6">
       <div className="surface-card w-full max-w-[400px] p-10">
         <Logo size="md" to="/" className="mb-6 [&_span]:text-[var(--text-primary)]" showText />
         <h1 className="font-display text-[32px] leading-tight">Claim your wall</h1>
@@ -73,8 +74,8 @@ export function Signup() {
               className="mt-1 h-11 w-full rounded-[var(--r-md)] border border-[var(--bg-muted)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button type="submit" disabled={loading} className="btn-primary h-11 w-full">
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          <button type="submit" disabled={loading} className="btn-neon h-11 w-full">
             {loading ? 'Creating…' : 'Create my wall'}
           </button>
         </form>
