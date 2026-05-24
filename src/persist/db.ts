@@ -5,9 +5,26 @@ import { LOCAL_CANVAS_ID } from '@/persist/constants'
 
 export { LOCAL_CANVAS_ID } from '@/persist/constants'
 
+export type LocalUser = {
+  id: string
+  username: string
+  passwordHash: string
+  passwordSalt: string
+  email?: string
+  createdAt: string
+}
+
+export type LocalSession = {
+  token: string
+  userId: string
+  expiresAt: number
+}
+
 export class WallDatabase extends Dexie {
   canvases!: Table<CanvasDoc, string>
   widgetInstances!: Table<WidgetInstance, string>
+  users!: Table<LocalUser, string>
+  sessions!: Table<LocalSession, string>
 
   constructor() {
     super('wall-db')
@@ -17,6 +34,12 @@ export class WallDatabase extends Dexie {
     this.version(2).stores({
       canvases: 'id',
       widgetInstances: 'id, ownerId, widgetId',
+    })
+    this.version(3).stores({
+      canvases: 'id',
+      widgetInstances: 'id, ownerId, widgetId',
+      users: 'id, username',
+      sessions: 'token, userId, expiresAt',
     })
   }
 }

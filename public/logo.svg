@@ -1,16 +1,16 @@
-<!-- Wall app logo: corkboard frame + sticky note -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" role="img" aria-label="Wall logo">
-  <rect width="48" height="48" rx="14" fill="#141414"/>
-  <rect x="8" y="10" width="32" height="28" rx="4" fill="#8B6914"/>
-  <rect x="8" y="10" width="32" height="28" rx="4" fill="url(#board)" opacity="0.85"/>
-  <rect x="13" y="16" width="14" height="11" rx="2" fill="#FEF08A" transform="rotate(-6 20 21.5)"/>
-  <rect x="24" y="22" width="12" height="9" rx="2" fill="#FDE68A" transform="rotate(4 30 26.5)"/>
-  <circle cx="19" cy="15" r="2.5" fill="#DC2626"/>
-  <circle cx="34" cy="20" r="2.5" fill="#2563EB"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" fill="none">
+  <rect x="4" y="4" width="64" height="64" rx="16" fill="#111118"/>
+  <rect x="4" y="4" width="64" height="64" rx="16" stroke="url(#brand-stroke)" stroke-width="1.5" opacity="0.85"/>
+  <path d="M20 20H52M20 36H52M20 52H52M36 20V52" stroke="#2a2a35" stroke-width="1.5" stroke-linecap="round"/>
+  <rect x="38" y="14" width="22" height="18" rx="3" fill="#fde68a" transform="rotate(8 49 23)"/>
+  <rect x="38" y="14" width="22" height="18" rx="3" stroke="#fbbf24" stroke-width="0.75" transform="rotate(8 49 23)" opacity="0.5"/>
+  <circle cx="44" cy="17" r="2.5" fill="#f87171"/>
+  <rect x="14" y="40" width="16" height="14" rx="2.5" fill="#c4b5fd" opacity="0.35" transform="rotate(-6 22 47)"/>
   <defs>
-    <linearGradient id="board" x1="8" y1="10" x2="40" y2="38" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#C4A574"/>
-      <stop offset="1" stop-color="#6B4F2A"/>
+    <linearGradient id="brand-stroke" x1="4" y1="4" x2="68" y2="68" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#a78bfa"/>
+      <stop offset="0.55" stop-color="#f472b6"/>
+      <stop offset="1" stop-color="#fb923c"/>
     </linearGradient>
   </defs>
 </svg>

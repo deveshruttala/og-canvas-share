@@ -38,47 +38,46 @@ export function Login() {
   }
 
   return (
-    <div className="landing-page flex min-h-[100dvh] items-center justify-center p-6">
-      <div className="surface-card w-full max-w-[400px] p-10">
-        <Logo size="md" to="/" className="mb-6 [&_span]:text-[var(--text-primary)]" showText />
-        <h1 className="font-display text-[32px] leading-tight">Open my wall</h1>
-        <p className="mt-2 text-[var(--text-secondary)]">Welcome back.</p>
+    <div className="landing-page auth-page">
+      <div className="auth-card">
+        <Logo size="md" to="/" className="mb-6 site-logo" showText />
+        <h1 className="font-display">Open my wall</h1>
+        <p className="auth-card-lead">Welcome back.</p>
 
-        <form onSubmit={onSubmit} className="mt-8 space-y-4">
-          <div>
-            <label className="text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
-              Username
-            </label>
+        <form onSubmit={onSubmit} className="auth-form">
+          <div className="auth-field">
+            <label htmlFor="login-username">Username</label>
             <input
+              id="login-username"
               required
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="mt-1 h-11 w-full rounded-[var(--r-md)] border border-[var(--bg-muted)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
+              onChange={(e) => setUsername(e.target.value.toLowerCase())}
+              placeholder="yourname"
+              autoComplete="username"
+              className="auth-input"
             />
           </div>
-          <div>
-            <label className="text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
-              Password
-            </label>
+          <div className="auth-field">
+            <label htmlFor="login-password">Password</label>
             <input
+              id="login-password"
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 h-11 w-full rounded-[var(--r-md)] border border-[var(--bg-muted)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
+              placeholder="Your password"
+              autoComplete="current-password"
+              className="auth-input"
             />
           </div>
-          {error && <p className="text-sm text-red-400">{error}</p>}
-          <button type="submit" disabled={loading} className="btn-neon h-11 w-full">
+          {error && <p className="auth-error">{error}</p>}
+          <button type="submit" disabled={loading} className="btn-neon auth-submit">
             {loading ? 'Opening…' : 'Open my wall'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-[var(--text-secondary)]">
-          New here?{' '}
-          <Link to="/signup" className="text-[var(--accent-text)] hover:underline">
-            Claim your wall
-          </Link>
+        <p className="auth-footer">
+          New here? <Link to="/signup">Claim your wall</Link>
         </p>
       </div>
     </div>

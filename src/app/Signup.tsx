@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '@/ui/Logo'
 import { useAuthStore } from '@/store/auth.store'
@@ -7,11 +7,21 @@ import '@/styles/landing.css'
 export function Signup() {
   const navigate = useNavigate()
   const signup = useAuthStore((s) => s.signup)
+  const fetchMe = useAuthStore((s) => s.fetchMe)
   const loading = useAuthStore((s) => s.loading)
   const error = useAuthStore((s) => s.error)
+  const user = useAuthStore((s) => s.user)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [email, setEmail] = useState('')
+
+  useEffect(() => {
+    void fetchMe()
+  }, [fetchMe])
+
+  useEffect(() => {
+    if (user) navigate('/edit', { replace: true })
+  }, [user, navigate])
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -24,69 +34,72 @@ export function Signup() {
   }
 
   return (
-    <div className="landing-page flex min-h-[100dvh] items-center justify-center p-6">
-      <div className="surface-card w-full max-w-[400px] p-10">
-        <Logo size="md" to="/" className="mb-6 [&_span]:text-[var(--text-primary)]" showText />
-        <h1 className="font-display text-[32px] leading-tight">Claim your wall</h1>
-        <p className="mt-2 text-[var(--text-secondary)]">Free forever. Your wall, your data.</p>
+    <div className="landing-page auth-page">
+      <div className="auth-card">
+        <Logo size="md" to="/" className="mb-6 site-logo" showText />
+        <h1 className="font-display">Claim your wall</h1>
+        <p className="auth-card-lead">Free forever. Your wall, your data.</p>
 
-        <form onSubmit={onSubmit} className="mt-8 space-y-4">
-          <div>
-            <label className="text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
-              Username
-            </label>
-            <div className="mt-1 flex overflow-hidden rounded-[var(--r-md)] border border-[var(--bg-muted)]">
-              <span className="flex items-center bg-[var(--bg-subtle)] px-3 text-xs text-[var(--text-tertiary)]">
-                wall.app/u/
-              </span>
+        <form onSubmit={onSubmit} className="auth-form">
+          <div className="auth-field">
+            <label htmlFor="signup-username">Username</label>
+            <div className="auth-input-group">
+              <span className="auth-input-prefix">wall.app/u/</span>
               <input
+                id="signup-username"
                 required
                 minLength={3}
                 maxLength={24}
                 pattern="[a-z0-9-]+"
                 value={username}
                 onChange={(e) => setUsername(e.target.value.toLowerCase())}
-                className="h-11 flex-1 px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
+                placeholder="yourname"
+                autoComplete="username"
+                className="auth-input"
               />
             </div>
           </div>
-          <div>
-            <label className="text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
-              Password
-            </label>
+
+          <div className="auth-field">
+            <label htmlFor="signup-password">Password</label>
             <input
+              id="signup-password"
               type="password"
               required
               minLength={10}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 h-11 w-full rounded-[var(--r-md)] border border-[var(--bg-muted)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
+              placeholder="At least 10 characters"
+              autoComplete="new-password"
+              className="auth-input"
             />
           </div>
-          <div>
-            <label className="text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
-              Email (optional)
-            </label>
+
+          <div className="auth-field">
+            <label htmlFor="signup-email">Email (optional)</label>
             <input
+              id="signup-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 h-11 w-full rounded-[var(--r-md)] border border-[var(--bg-muted)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
+              placeholder="you@example.com"
+              autoComplete="email"
+              className="auth-input"
             />
           </div>
-          {error && <p className="text-sm text-red-400">{error}</p>}
-          <button type="submit" disabled={loading} className="btn-neon h-11 w-full">
+
+          {error && <p className="auth-error">{error}</p>}
+
+          <button type="submit" disabled={loading} className="btn-neon auth-submit">
             {loading ? 'Creating…' : 'Create my wall'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-[var(--text-secondary)]">
-          Already have one?{' '}
-          <Link to="/login" className="text-[var(--accent-text)] hover:underline">
-            Log in
-          </Link>
+        <p className="auth-footer">
+          Already have one? <Link to="/login">Log in</Link>
         </p>
       </div>
     </div>
   )
 }
+

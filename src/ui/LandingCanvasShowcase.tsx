@@ -1,78 +1,70 @@
-/**
- * Static showcase of a living wall — no tldraw on the landing page (lighter + no inspector bleed).
- */
 export function LandingCanvasShowcase() {
   return (
-    <div className="landing-canvas-frame" id="canvas">
-      <div className="landing-canvas-header">
-        <div>
-          <p className="landing-canvas-kicker">My living canvas</p>
-          <h2 className="landing-canvas-title">Private noticeboard draft</h2>
+    <div className="wall-preview">
+      <div className="wall-preview-chrome">
+        <div className="wall-preview-toolbar">
+          <span className="wall-preview-live" aria-hidden />
+          <span className="wall-preview-user">@devesh</span>
+          <span className="wall-preview-badge">Live</span>
         </div>
-        <span className="landing-canvas-badge">Preview</span>
+        <span className="wall-preview-size">1600 × 1000</span>
       </div>
 
-      <div className="landing-canvas-board">
-        <article className="landing-widget landing-widget-bio">
-          <h3>
-            Hi! Hello, I&apos;m Jaswanth <span aria-hidden>👋</span>
-          </h3>
-          <p>
-            Full-Stack Engineer building experimental interactive canvases. Welcome to my living wall!
-          </p>
-          <ul>
-            <li>✨ React / WebGL / Node.js</li>
-            <li>🎨 Passionate about high-contrast design</li>
-            <li>📦 Creative layouts &amp; UI architecture</li>
-          </ul>
-          <span className="landing-widget-hint">Double-click to edit</span>
+      <div className="wall-preview-canvas">
+        <article className="wall-tile wall-tile-hero">
+          <p className="wall-tile-kicker">Profile</p>
+          <h3>Hey, I&apos;m Devesh</h3>
+          <p>Builder crafting living noticeboards — one canvas, every embed stays in sync.</p>
+          <div className="wall-tile-chips">
+            <span>React</span>
+            <span>Design</span>
+            <span>Indie web</span>
+          </div>
         </article>
 
-        <article className="landing-widget landing-widget-github">
-          <p className="landing-widget-label">jaswanth/wall</p>
-          <p className="landing-widget-sub">Commit contribution app</p>
-          <div className="landing-github-grid" aria-hidden>
+        <article className="wall-tile wall-tile-github">
+          <p className="wall-tile-kicker">GitHub</p>
+          <p className="wall-tile-title">devesh/wall</p>
+          <div className="wall-tile-graph" aria-hidden>
             {Array.from({ length: 56 }).map((_, i) => (
-              <span key={i} className={`landing-github-cell level-${(i % 4) + 1}`} />
+              <span key={i} className={`g${(i * 5 + 11) % 5}`} />
             ))}
           </div>
-          <div className="landing-widget-stats">
-            <span>Stars: 1,429</span>
-            <span>Forks: 22</span>
-          </div>
+          <p className="wall-tile-foot">★ 842 · 12 repos</p>
         </article>
 
-        <article className="landing-widget landing-widget-image" aria-label="Circuit board artwork" />
-
-        <article className="landing-widget landing-widget-emoji" aria-hidden>
-          🚀
+        <article className="wall-tile wall-tile-visual" aria-label="Workspace">
+          <span className="wall-tile-visual-tag">Shipping</span>
         </article>
 
-        <article className="landing-widget landing-widget-audio">
-          <div className="landing-vinyl" aria-hidden />
+        <article className="wall-tile wall-tile-music">
+          <div className="wall-tile-disc" aria-hidden />
           <div>
-            <p className="landing-widget-label">Hyper-focus Ambient waves</p>
-            <p className="landing-widget-sub">Visual Soundscape Track</p>
-            <div className="landing-audio-bars" aria-hidden>
-              {[3, 5, 2, 6, 4, 7, 3].map((h, i) => (
+            <p className="wall-tile-kicker">Now playing</p>
+            <p className="wall-tile-title">Midnight Canvas</p>
+            <div className="wall-tile-bars" aria-hidden>
+              {[3, 6, 4, 8, 5, 7, 4, 6].map((h, i) => (
                 <span key={i} style={{ height: `${h * 4}px` }} />
               ))}
             </div>
           </div>
         </article>
 
-        <article className="landing-widget landing-widget-link">
-          <p className="landing-widget-label">Link preview</p>
-          <h3>GitHub Profile</h3>
-          <p>Explore premium repos, custom visual layouts, and lightweight high-impact web-apps.</p>
-          <a href="https://github.com" target="_blank" rel="noreferrer">
-            https://github.com/jsndv7
-          </a>
+        <article className="wall-tile wall-tile-link">
+          <p className="wall-tile-kicker">Featured</p>
+          <h3>Portfolio</h3>
+          <p>Experiments, write-ups, and open-source tools.</p>
+          <span className="wall-tile-url">github.com/devesh</span>
         </article>
 
-        <article className="landing-widget landing-widget-qr">
-          <div className="landing-qr-pattern" aria-hidden />
-          <p>wall.app/jaswanth</p>
+        <article className="wall-tile wall-tile-stat">
+          <p className="wall-tile-stat-num">2.4k</p>
+          <p className="wall-tile-stat-label">views</p>
+        </article>
+
+        <article className="wall-tile wall-tile-qr">
+          <div className="wall-tile-qr-code" aria-hidden />
+          <p>wall.app/devesh</p>
         </article>
       </div>
     </div>

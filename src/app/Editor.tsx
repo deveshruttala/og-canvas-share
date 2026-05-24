@@ -10,7 +10,9 @@ import { HelpOverlay } from '@/ui/HelpOverlay'
 import { OmniBar } from '@/ui/OmniBar'
 import { useCanvasStore } from '@/store/canvas.store'
 import { useUiStore } from '@/store/ui.store'
-import { loadCanvas, LOCAL_CANVAS_ID } from '@/persist/db'
+import { useAuthStore } from '@/store/auth.store'
+import { loadCanvas } from '@/persist/db'
+import { wallCanvasId } from '@/persist/constants'
 import { createEmptyCanvas } from '@/types/canvas'
 import { handleTldrawPaste } from '@/lib/paste-handler'
 import { getWallEditor, onHistoryChange } from '@/editor/wall-editor-api'
@@ -19,7 +21,6 @@ import { DrawBrushPanel } from '@/editor/DrawBrushPanel'
 import { SessionTimeline } from '@/editor/SessionTimeline'
 import { useOmniStore } from '@/store/omni.store'
 import { trackOmniCursor } from '@/lib/omni-cursor'
-import { useAuthStore } from '@/store/auth.store'
 import '@/styles/omni-bar.css'
 import '@/styles/editor-chrome.css'
 import toast from 'react-hot-toast'
@@ -61,21 +62,28 @@ export function Editor() {
 
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
+  const [canvasReady, setCanvasReady] = useState(false)
 
   useEffect(() => {
     void fetchMe()
   }, [fetchMe])
 
   useEffect(() => {
+    if (!user) return
+    setCanvasReady(false)
     void (async () => {
-      const saved = await loadCanvas(LOCAL_CANVAS_ID)
+      const wallId = wallCanvasId(user.username)
+      const saved = await loadCanvas(wallId)
       if (saved) {
         hydrate(saved)
-        return
+      } else {
+        const doc = createEmptyCanvas(wallId)
+        doc.title = `${user.username}'s Wall`
+        hydrate(doc)
       }
-      hydrate(createEmptyCanvas(LOCAL_CANVAS_ID))
+      setCanvasReady(true)
     })()
-  }, [hydrate])
+  }, [user, hydrate])
 
   useEffect(() => {
     const refresh = () => {
@@ -150,7 +158,7 @@ export function Editor() {
     return stop
   }, [hydrated])
 
-  if (!hydrated) {
+  if (!hydrated || !canvasReady || !user) {
     return (
       <div className="wall-editor-shell flex h-[100dvh] flex-col items-center justify-center gap-4 text-neutral-400">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#beee1d]/30 border-t-[#beee1d]" />

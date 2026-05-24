@@ -1,14 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <rect width="32" height="32" rx="8" fill="#141414"/>
-  <rect x="5" y="7" width="22" height="18" rx="3" fill="#8B6914"/>
-  <rect x="5" y="7" width="22" height="18" rx="3" fill="url(#b)" opacity="0.9"/>
-  <rect x="8" y="11" width="9" height="7" rx="1.5" fill="#FEF08A" transform="rotate(-6 12.5 14.5)"/>
-  <rect x="16" y="15" width="8" height="6" rx="1.5" fill="#FDE68A" transform="rotate(4 20 18)"/>
-  <circle cx="12" cy="10" r="1.5" fill="#DC2626"/>
+  <rect width="32" height="32" rx="8" fill="#111118"/>
+  <rect x="3" y="3" width="26" height="26" rx="7" stroke="url(#g)" stroke-width="1.2" opacity="0.9"/>
+  <path d="M9 9H23M9 16H23M9 23H23M16 9V23" stroke="#2a2a35" stroke-width="1" stroke-linecap="round"/>
+  <rect x="17" y="6" width="10" height="8" rx="1.5" fill="#fde68a" transform="rotate(8 22 10)"/>
+  <circle cx="19" cy="8" r="1.2" fill="#f87171"/>
+  <rect x="7" y="19" width="7" height="6" rx="1.2" fill="#c4b5fd" opacity="0.4" transform="rotate(-6 10.5 22)"/>
   <defs>
-    <linearGradient id="b" x1="5" y1="7" x2="27" y2="25" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#C4A574"/>
-      <stop offset="1" stop-color="#6B4F2A"/>
+    <linearGradient id="g" x1="3" y1="3" x2="29" y2="29" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#a78bfa"/>
+      <stop offset="0.55" stop-color="#f472b6"/>
+      <stop offset="1" stop-color="#fb923c"/>
     </linearGradient>
   </defs>
 </svg>

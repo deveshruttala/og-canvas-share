@@ -1,7 +1,9 @@
 const API_URL = import.meta.env.VITE_API_URL ?? ''
 const TOKEN_KEY = 'wall_auth_token'
 
-export type AuthUser = { id: string; username: string; email?: string }
+import type { AuthUser } from '@/lib/auth/types'
+
+export type { AuthUser }
 
 export function getAuthToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)
