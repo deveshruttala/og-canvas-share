@@ -1,0 +1,162 @@
+/* Public wall viewer — full-bleed canvas + mobile landscape */
+
+.public-viewer-shell {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bg-page, #faf8f5);
+}
+
+.public-viewer-rotate {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Mobile portrait → force horizontal layout for canvas */
+@media (max-width: 896px) and (orientation: portrait) {
+  .public-viewer-rotate {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100vh;
+    height: 100vw;
+    max-width: 100vh;
+    max-height: 100vw;
+    transform: translate(-50%, -50%) rotate(90deg);
+    transform-origin: center center;
+  }
+}
+
+.wall-tldraw-root.wall-public-view {
+  background: var(--bg-page, #faf8f5);
+  touch-action: none;
+}
+
+.wall-tldraw-root.wall-public-view .wall-workspace-bg {
+  display: none;
+}
+
+.wall-tldraw-root.wall-public-view .tl-container,
+.wall-tldraw-root.wall-public-view .tl-background {
+  background: var(--bg-page, #faf8f5) !important;
+}
+
+/* Bottom-left chrome: logo + reactions (inside rotated container on mobile) */
+.public-wall-chrome {
+  pointer-events: none;
+  position: absolute;
+  z-index: 50;
+  left: max(12px, env(safe-area-inset-left));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.public-wall-logo {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 6px 6px;
+  border-radius: var(--r-pill, 999px);
+  background: rgba(255, 252, 246, 0.88);
+  border: 1px solid rgba(60, 50, 40, 0.08);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(12px);
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.public-wall-logo:hover {
+  opacity: 0.9;
+}
+
+.public-wall-logo img {
+  height: 24px;
+  width: 24px;
+  border-radius: 6px;
+}
+
+.public-wall-logo span {
+  font-family: var(--font-display, 'Instrument Serif', serif);
+  font-size: 13px;
+  color: var(--text-primary, #1a1814);
+}
+
+.public-reactions {
+  pointer-events: auto;
+  display: flex;
+  flex-wrap: wrap;
+  max-width: min(320px, calc(100vw - 120px));
+  gap: 4px;
+  padding: 5px 8px;
+  border-radius: var(--r-pill, 999px);
+  background: rgba(255, 252, 246, 0.88);
+  border: 1px solid rgba(60, 50, 40, 0.08);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(12px);
+}
+
+.public-reaction-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  min-width: 32px;
+  padding: 2px 3px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.12s;
+}
+
+.public-reaction-btn:hover {
+  background: rgba(60, 50, 40, 0.06);
+  transform: translateY(-1px);
+}
+
+.public-reaction-btn:active {
+  transform: scale(0.95);
+}
+
+.public-reaction-btn:active .public-reaction-emoji {
+  animation: reaction-pop 0.35s ease-out;
+}
+
+@keyframes reaction-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.45); }
+  100% { transform: scale(1); }
+}
+
+/* Floating emoji burst layer */
+.reaction-burst-layer {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow: hidden;
+}
+
+.reaction-burst-particle {
+  position: absolute;
+  font-size: clamp(1.25rem, 4vw, 2rem);
+  line-height: 1;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.public-reaction-emoji {
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.public-reaction-count {
+  font-family: ui-monospace, monospace;
+  font-size: 9px;
+  color: var(--text-tertiary, #8e8a82);
+  line-height: 1;
+}

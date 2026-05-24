@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    @apply font-sans antialiased;
+    background: var(--bg-page);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .font-display {
+    font-family: 'Instrument Serif', Georgia, serif;
+  }
+}
+
+@layer components {
+  /* Primary CTA — warm amber, works on dark backgrounds */
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-5 py-2.5 text-sm font-semibold shadow-[var(--shadow-sm)] transition active:scale-[0.98];
+    border-radius: var(--r-pill);
+    background: var(--accent);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    opacity: 0.92;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium transition;
+    border-radius: var(--r-md);
+    border: 1.5px solid var(--text-primary);
+    color: var(--text-primary);
+    background: transparent;
+  }
+
+  .btn-ghost:hover {
+    background: var(--bg-subtle);
+  }
+
+  .surface-card {
+    border-radius: var(--r-lg);
+    border: 1px solid rgba(60, 50, 40, 0.08);
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-md);
+  }
+
+  .page-shell {
+    @apply min-h-screen;
+    background: var(--bg-page);
+    color: var(--text-primary);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

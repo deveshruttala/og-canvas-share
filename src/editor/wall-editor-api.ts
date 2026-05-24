@@ -1,0 +1,160 @@
+import type { Editor } from '@tldraw/editor'
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '@/types/canvas'
+
+export const WALL_FRAME_ID = 'shape:wall-frame' as const
+
+export const ZOOM_STEPS = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4] as const
+
+export const WALL_CAMERA = {
+  wheelBehavior: 'pan' as const,
+  panSpeed: 1,
+  zoomSpeed: 1,
+  zoomSteps: [...ZOOM_STEPS],
+  constraints: {
+    bounds: { x: -200, y: -200, w: 2000, h: 1400 },
+    padding: { x: 48, y: 48 },
+    origin: { x: 0.5, y: 0.5 },
+    initialZoom: 'fit-max' as const,
+    baseZoom: 'fit-max' as const,
+    behavior: 'contain' as const,
+  },
+}
+
+/** Public viewer — wall fills viewport, no pan/zoom */
+export const PUBLIC_WALL_CAMERA = {
+  isLocked: true,
+  wheelBehavior: 'none' as const,
+  panSpeed: 0,
+  zoomSpeed: 0,
+  zoomSteps: [1],
+  constraints: {
+    bounds: { x: 0, y: 0, w: CANVAS_WIDTH, h: CANVAS_HEIGHT },
+    padding: { x: 0, y: 0 },
+    origin: { x: 0.5, y: 0.5 },
+    initialZoom: 'fit-max' as const,
+    baseZoom: 'fit-max' as const,
+    behavior: 'contain' as const,
+  },
+}
+
+export const WALL_TLDRAW_OPTIONS = {
+  createTextOnCanvasDoubleClick: false,
+  maxPages: 1,
+  hitTestMargin: 8,
+  adjacentShapeMargin: 12,
+}
+
+export const HIDDEN_TLDRAW_UI = {
+  Toolbar: null,
+  StylePanel: null,
+  PageMenu: null,
+  MainMenu: null,
+  NavigationPanel: null,
+  HelpMenu: null,
+  DebugPanel: null,
+  DebugMenu: null,
+  ZoomMenu: null,
+  Minimap: null,
+  QuickActions: null,
+  ActionsMenu: null,
+  HelperButtons: null,
+  SharePanel: null,
+  TopPanel: null,
+  MenuPanel: null,
+  KeyboardShortcutsDialog: null,
+  ContextMenu: null,
+  ImageToolbar: null,
+  VideoToolbar: null,
+}
+
+let editorRef: Editor | null = null
+const zoomListeners = new Set<(z: number) => void>()
+const historyListeners = new Set<() => void>()
+
+export function registerWallEditor(editor: Editor | null) {
+  editorRef = editor
+}
+
+export function getWallEditor() {
+  return editorRef
+}
+
+export function onZoomChange(cb: (z: number) => void) {
+  zoomListeners.add(cb)
+  return () => {
+    zoomListeners.delete(cb)
+  }
+}
+
+export function notifyZoom(z: number) {
+  zoomListeners.forEach((cb) => cb(z))
+}
+
+export function onHistoryChange(cb: () => void) {
+  historyListeners.add(cb)
+  return () => {
+    historyListeners.delete(cb)
+  }
+}
+
+export function notifyHistoryChange() {
+  historyListeners.forEach((cb) => cb())
+}
+
+export function wallCenter(editor: Editor) {
+  const cx = CANVAS_WIDTH / 2
+  const cy = CANVAS_HEIGHT / 2
+  const vp = editor.getViewportPageBounds()
+  if (vp) {
+    return { x: vp.x + vp.w / 2, y: vp.y + vp.h / 2 }
+  }
+  return { x: cx, y: cy }
+}
+
+export function setupWallSurface(editor: Editor, themeBackground: string, mode: 'edit' | 'public' = 'edit') {
+  const existing = editor.getShape(WALL_FRAME_ID as never)
+  if (!existing) {
+    editor.createShape({
+      id: WALL_FRAME_ID as never,
+      type: 'geo',
+      x: 0,
+      y: 0,
+      isLocked: true,
+      props: {
+        geo: 'rectangle',
+        w: CANVAS_WIDTH,
+        h: CANVAS_HEIGHT,
+        dash: 'draw',
+        color: 'yellow',
+        fill: 'semi',
+        size: 'm',
+        font: 'draw',
+        align: 'middle',
+        verticalAlign: 'middle',
+        growY: 0,
+        url: '',
+        scale: 1,
+        richText: { type: 'doc', content: [] },
+      },
+      meta: { wallFrame: true, themeBackground },
+    })
+    editor.sendToBack([WALL_FRAME_ID as never])
+  }
+
+  if (mode === 'public') {
+    editor.setCameraOptions(PUBLIC_WALL_CAMERA)
+    editor.zoomToFit({ animation: { duration: 0 } })
+  } else {
+    editor.setCameraOptions(WALL_CAMERA)
+    editor.zoomToFit({ animation: { duration: 300 } })
+  }
+}
+
+export function fitPublicWall(editor: Editor) {
+  editor.setCameraOptions(PUBLIC_WALL_CAMERA)
+  editor.zoomToFit({ animation: { duration: 0 } })
+}
+
+export function setWallReadonly(editor: Editor, readonly: boolean) {
+  editor.updateInstanceState({ isReadonly: readonly })
+}

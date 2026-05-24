@@ -1,0 +1,11 @@
+{
+  "name": "@wall/live-client",
+  "version": "0.1.0",
+  "description": "Connect to Wall Live Protocol — SSE updates for walls and widgets",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": "./dist/index.js" },
+  "files": ["dist"],
+  "license": "MIT"
+}

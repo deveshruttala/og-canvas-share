@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Wall Live",
+  "version": "0.1.0",
+  "description": "Replace stale wall.app link previews with live renders on LinkedIn and the web.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://wall.app/*", "https://*.wall.app/*", "http://localhost:*/*"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": { "default_popup": "popup.html", "default_title": "Wall Live" }
+}
