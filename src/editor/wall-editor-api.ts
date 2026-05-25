@@ -1,6 +1,7 @@
 import type { Editor } from '@tldraw/editor'
 import { getSnapshot } from '@tldraw/editor'
 import { debounce } from '@/lib/cn'
+import { pushTimelineMark } from '@/editor/wall-timeline-history'
 import type { ThemeConfig } from '@/themes'
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '@/types/canvas'
 
@@ -218,10 +219,18 @@ export function attachWallDocumentSync(
     if (!handlers.readOnly()) notifyHistoryChange()
   }, 200)
 
+  let gestureActive = false
+
   const flushPersist = () => {
     if (handlers.readOnly()) return
     schedulePersist.cancel()
-    handlers.onPersist(getSnapshot(editor.store))
+    const snap = getSnapshot(editor.store)
+    handlers.onPersist(snap)
+    if (gestureActive) {
+      pushTimelineMark(editor)
+      gestureActive = false
+    }
+    notifyHistoryChange()
   }
 
   const unsubStore = editor.store.listen(
@@ -232,11 +241,20 @@ export function attachWallDocumentSync(
     { scope: 'document' },
   )
 
+  const onPointerDown = (e: PointerEvent) => {
+    if (handlers.readOnly()) return
+    const target = e.target as HTMLElement | null
+    if (target?.closest('.wall-session-timeline, .wall-dock-layer, .wall-editor-header')) return
+    gestureActive = true
+  }
+
   const onPointerUp = () => flushPersist()
+  window.addEventListener('pointerdown', onPointerDown, { capture: true })
   window.addEventListener('pointerup', onPointerUp, { capture: true })
 
   return () => {
     unsubStore()
+    window.removeEventListener('pointerdown', onPointerDown, { capture: true })
     window.removeEventListener('pointerup', onPointerUp, { capture: true })
     schedulePersist.cancel()
     scheduleHistory.cancel()

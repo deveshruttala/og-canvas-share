@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { WallTldrawEditor } from '@/editor/WallTldrawEditor'
 import { useCanvasStore } from '@/store/canvas.store'
-import { loadCanvas } from '@/persist/db'
+import { loadPublishedWall } from '@/lib/publish-wall'
+import { isLocalAuth } from '@/lib/auth/config'
 import '@/styles/public-viewer.css'
 
 export function EmbedView() {
@@ -12,8 +13,9 @@ export function EmbedView() {
 
   useEffect(() => {
     void (async () => {
-      if (username === 'local') {
-        const doc = await loadCanvas('local')
+      if (!username) return
+      if (isLocalAuth()) {
+        const doc = await loadPublishedWall(username)
         if (doc) {
           hydrate(doc)
           setReady(true)

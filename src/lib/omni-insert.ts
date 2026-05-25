@@ -33,14 +33,15 @@ export async function insertOmniItem(item: OmniItem) {
           cover?: string
           badge?: string
         }
-        if (payload.src) {
+        const src = payload.src ?? item.previewUrl
+        if (src) {
           await wallActions.addStreamingAudio(
             {
-              src: payload.src,
-              title: payload.title,
-              artist: payload.artist,
+              src,
+              title: payload.title ?? item.title,
+              artist: payload.artist ?? item.subtitle,
               cover: payload.cover,
-              badge: payload.badge,
+              badge: payload.badge ?? item.source,
             },
             x,
             y,
@@ -53,9 +54,20 @@ export async function insertOmniItem(item: OmniItem) {
       case 'emoji':
         wallActions.addEmoji(item.emoji ?? '✨', x, y)
         break
-      case 'icon':
-        wallActions.addIcon(item.icon ?? '⚡')
+      case 'icon': {
+        const iconUrl = item.payload?.iconUrl as string | undefined
+        if (iconUrl) {
+          await wallActions.addImageFromUrl(
+            iconUrl,
+            x,
+            y,
+            `Iconify · ${item.title}`,
+          )
+        } else {
+          wallActions.addIcon(item.icon ?? '⚡')
+        }
         break
+      }
       case 'widget': {
         const catalogId = item.payload?.catalogId as string | undefined
         const widget = WIDGET_CATALOG.find((w) => w.id === catalogId)

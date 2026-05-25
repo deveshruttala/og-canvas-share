@@ -23,6 +23,8 @@ import {
   wallliveUrl,
 } from '@/lib/share-urls'
 import { api, isApiConfigured } from '@/lib/api'
+import { isLocalAuth } from '@/lib/auth/config'
+import { canPublishWalls, publishWallLocally, saveWallDraftLocally } from '@/lib/publish-wall'
 
 const LinkedInWizard = lazy(() => import('@/ui/LinkedInWizard').then((m) => ({ default: m.LinkedInWizard })))
 
@@ -57,27 +59,43 @@ export function ShareModal() {
     useCanvasStore.setState((s) => ({
       doc: { ...s.doc, meta: { ...s.doc.meta, shareVersion: next } },
     }))
-    if (isApiConfigured() && user) {
+    const bumped = {
+      ...doc,
+      meta: { ...doc.meta, shareVersion: next, updatedAt: new Date().toISOString() },
+    }
+    useCanvasStore.setState({ doc: bumped })
+    if (user && isApiConfigured()) {
       try {
-        await api.saveWall(user.username, {
-          ...doc,
-          meta: { ...doc.meta, shareVersion: next, updatedAt: new Date().toISOString() },
-        })
+        await api.saveWall(user.username, bumped)
       } catch {
         /* local ok */
       }
+    } else if (user && isLocalAuth()) {
+      await saveWallDraftLocally(user.username, bumped)
     }
     toast.success(`Version bumped to v${next}`)
   }
 
   const publishWall = async () => {
-    if (!isApiConfigured() || !user) {
-      toast.error('Sign in and configure API to publish')
+    if (!user) {
+      toast.error('Sign in to publish your wall')
+      return
+    }
+    if (!canPublishWalls()) {
+      toast.error('Publishing is not available in this environment')
       return
     }
     try {
-      await api.saveWall(user.username, doc)
-      toast.success('Wall published!')
+      if (isApiConfigured()) {
+        await api.saveWall(user.username, {
+          ...doc,
+          meta: { ...doc.meta, updatedAt: new Date().toISOString(), publishedAt: new Date().toISOString() },
+        })
+      } else {
+        const published = await publishWallLocally(user.username, doc)
+        useCanvasStore.setState({ doc: published })
+      }
+      toast.success(`Wall published! Open ${publicUrl}`)
     } catch {
       toast.error('Publish failed')
     }
@@ -164,7 +182,17 @@ export function ShareModal() {
             <div className="space-y-4">
               {!user && (
                 <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-                  Using local preview URL. Sign in to publish at /u/yourname
+                  Sign in to publish at /u/yourname
+                </p>
+              )}
+              {user && isLocalAuth() && !(doc.meta as { publishedAt?: string }).publishedAt && (
+                <p className="rounded-lg bg-[#beee1d]/10 px-3 py-2 text-xs text-[#beee1d]">
+                  Click <strong>Publish wall</strong> to make this link live on this device (saved in your browser).
+                </p>
+              )}
+              {user && (doc.meta as { publishedAt?: string }).publishedAt && (
+                <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
+                  Published — visitors can open your wall at the link below.
                 </p>
               )}
               <div>

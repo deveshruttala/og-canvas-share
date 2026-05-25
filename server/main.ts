@@ -5,7 +5,7 @@ import { compare, hash } from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts'
 import { create, getNumericDate, verify } from 'https://deno.land/x/djwt@v3.0.2/mod.ts'
 
 import { handleAiChat } from './ai.ts'
-import { proxyAssetUrl, proxyMicrolink, proxyOpenverse } from './proxy.ts'
+import { proxyAssetUrl, proxyMicrolink, proxyOpenverse, proxyWallAudioSearch, proxyWallImageSearch } from './proxy.ts'
 import { renderResponse } from './render.ts'
 import { buildRssFeed } from './rss.ts'
 import { handlePing, getStatsSummary } from './stats.ts'
@@ -161,6 +161,16 @@ async function handler(req: Request): Promise<Response> {
 
   if (req.method === 'GET' && path.startsWith('/openverse-api')) {
     return proxyOpenverse(path.replace(/^\/openverse-api/, '') + url.search, cors)
+  }
+
+  const imgApi = path.match(/^\/wall-img-api\/(wikimedia|pixabay|pexels|unsplash)$/)
+  if (req.method === 'GET' && imgApi) {
+    return proxyWallImageSearch(imgApi[1], url.search, req, cors)
+  }
+
+  const audioApi = path.match(/^\/wall-audio-api\/(pixabay|freesound)$/)
+  if (req.method === 'GET' && audioApi) {
+    return proxyWallAudioSearch(audioApi[1], url.search, req, cors)
   }
 
   if (req.method === 'GET' && path.startsWith('/microlink-api')) {

@@ -2,9 +2,11 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 import { wallProxyPlugin } from './vite-proxy-plugin'
+import { wallImageSearchProxyPlugin } from './vite-image-search-proxy'
+import { wallAudioSearchProxyPlugin } from './vite-audio-search-proxy'
 
 export default defineConfig({
-  plugins: [react(), wallProxyPlugin()],
+  plugins: [react(), wallProxyPlugin(), wallImageSearchProxyPlugin(), wallAudioSearchProxyPlugin()],
   base: process.env.VITE_BASE || '/',
   server: {
     proxy: {

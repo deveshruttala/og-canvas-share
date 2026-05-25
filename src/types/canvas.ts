@@ -126,6 +126,8 @@ export type CanvasDoc = {
     updatedAt: string
     ownerGithub: string
     shareVersion?: number
+    /** Set when owner clicks Publish (local or API). */
+    publishedAt?: string
     showPublicStats?: boolean
   }
 }

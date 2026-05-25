@@ -20,7 +20,8 @@ import {
 import { useUiStore } from '@/store/ui.store'
 import { ThemePicker } from '@/ui/ThemePicker'
 import { wallActions } from '@/editor/wall-actions'
-import { getWallEditor, onZoomChange, onHistoryChange, ZOOM_STEPS } from '@/editor/wall-editor-api'
+import { getWallEditor, onZoomChange, ZOOM_STEPS } from '@/editor/wall-editor-api'
+import { useWallHistory } from '@/editor/useWallHistory'
 import { blobToDataUrl, compressImage } from '@/lib/compress-image'
 import toast from 'react-hot-toast'
 
@@ -38,21 +39,9 @@ export function Dock() {
   const setShowEmojiPicker = useUiStore((s) => s.setShowEmojiPicker)
 
   const [zoomOpen, setZoomOpen] = useState(false)
-  const [canUndo, setCanUndo] = useState(false)
-  const [canRedo, setCanRedo] = useState(false)
+  const { canUndo, canRedo } = useWallHistory()
 
   useEffect(() => onZoomChange(setZoomScale), [setZoomScale])
-
-  useEffect(() => {
-    const refresh = () => {
-      const u = wallActions.canUndo()
-      const r = wallActions.canRedo()
-      setCanUndo((prev) => (prev === u ? prev : u))
-      setCanRedo((prev) => (prev === r ? prev : r))
-    }
-    refresh()
-    return onHistoryChange(refresh)
-  }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

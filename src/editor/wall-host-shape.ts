@@ -4,6 +4,11 @@ import { createShapeId, toRichText } from 'tldraw'
 import { fetchLinkMeta } from '@/lib/extract-link-meta'
 import { toJsonMeta } from '@/lib/json-meta'
 import { detectLinkPlatform, getEmbedUrl } from '@/lib/link-resolver'
+import {
+  getSoundPadSize,
+  legacySoundPadSampleId,
+  type SoundPadData,
+} from '@/lib/sound-pad-samples'
 
 export type WallHostMeta = {
   wallType: 'audio' | 'qr' | 'widget' | 'progress' | 'soundpad' | 'polaroid' | 'link'
@@ -172,9 +177,29 @@ export function fixInvisibleWallHosts(editor: Editor) {
   editor.run(() => {
     for (const shape of shapes) {
       if (shape.type !== 'geo') continue
+      const meta = shape.meta as WallHostMeta | undefined
       const bounds = editor.getShapePageBounds(shape.id)
-      const w = bounds?.w ?? (shape.props as { w: number }).w
-      const h = bounds?.h ?? (shape.props as { h: number }).h
+      let w = bounds?.w ?? (shape.props as { w: number }).w
+      let h = bounds?.h ?? (shape.props as { h: number }).h
+      if (meta?.wallType === 'soundpad') {
+        const raw = { ...(meta.wallData ?? {}) } as SoundPadData
+        const legacySound = legacySoundPadSampleId(raw)
+        const wallData: SoundPadData = legacySound ? { ...raw, sound: legacySound } : raw
+        const size = getSoundPadSize(wallData)
+        w = size.w
+        h = size.h
+        editor.updateShape({
+          id: shape.id,
+          type: 'geo',
+          x: bounds?.x ?? shape.x,
+          y: bounds?.y ?? shape.y,
+          rotation: 0,
+          opacity: 0.001,
+          props: wallHostGeoProps(w, h),
+          meta: toJsonMeta({ ...meta, wallData }),
+        })
+        continue
+      }
       editor.updateShape({
         id: shape.id,
         type: 'geo',

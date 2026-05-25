@@ -1,6 +1,7 @@
 import type { CanvasElement } from '@/types/canvas'
 import type { WidgetInstance } from '@/types/widget-instance'
 import { WIDGET_CATALOG } from '@/widgets/catalog'
+import { getSoundPadSize, type SoundPadData } from '@/lib/sound-pad-samples'
 import { WIDGET_FONT_FAMILY, WIDGET_RADIUS_PX } from '@/types/widget-instance'
 
 export function widgetInstanceToElement(widget: WidgetInstance): CanvasElement {
@@ -130,8 +131,15 @@ export function wallMetaToWidgetConfig(meta: {
     return { widgetId: match?.id ?? 'progress-water', config: data, size: { w: 300, h: 120 } }
   }
   if (meta.wallType === 'soundpad') {
-    const match = WIDGET_CATALOG.find((w) => w.template === 'soundpad')
-    return { widgetId: match?.id ?? 'soundpad-rain', config: data, size: { w: 280, h: 220 } }
+    const sound = typeof data.sound === 'string' ? data.sound : ''
+    const match =
+      WIDGET_CATALOG.find((w) => w.template === 'soundpad' && w.config?.sound === sound) ??
+      WIDGET_CATALOG.find((w) => w.template === 'soundpad')
+    return {
+      widgetId: match?.id ?? 'soundpad-rain',
+      config: data,
+      size: getSoundPadSize(data as SoundPadData),
+    }
   }
   if (meta.wallType === 'polaroid') {
     const match = WIDGET_CATALOG.find((w) => w.template === 'polaroid')

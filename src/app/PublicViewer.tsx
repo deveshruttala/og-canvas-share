@@ -5,7 +5,10 @@ import { Logo } from '@/ui/Logo'
 import { PublicWallChrome } from '@/ui/PublicWallChrome'
 import { useCanvasStore } from '@/store/canvas.store'
 import { loadCanvas } from '@/persist/db'
+import { LOCAL_CANVAS_ID } from '@/persist/constants'
 import { api } from '@/lib/api'
+import { isLocalAuth } from '@/lib/auth/config'
+import { loadPublishedWall } from '@/lib/publish-wall'
 import { recordPing } from '@/lib/stats-client'
 import '@/styles/public-viewer.css'
 
@@ -16,26 +19,39 @@ export function PublicViewer() {
 
   useEffect(() => {
     void (async () => {
-      if (username === 'local') {
-        const doc = await loadCanvas('local')
-        if (doc) {
-          hydrate(doc)
+      const name = username ?? ''
+
+      if (isLocalAuth()) {
+        const published = await loadPublishedWall(name)
+        if (published) {
+          hydrate(published)
           setState('ready')
-          void recordPing({ kind: 'wall', id: 'local' }, 'view')
+          void recordPing({ kind: 'wall', id: name }, 'view')
           return
+        }
+        if (name === 'local') {
+          const legacy = await loadCanvas(LOCAL_CANVAS_ID)
+          if (legacy?.meta?.publishedAt) {
+            hydrate(legacy)
+            setState('ready')
+            void recordPing({ kind: 'wall', id: 'local' }, 'view')
+            return
+          }
         }
       }
 
-      try {
-        const remote = await api.getWall(username ?? '')
-        if (remote) {
-          hydrate(remote)
-          setState('ready')
-          if (username) void recordPing({ kind: 'wall', id: username }, 'view')
-          return
+      if (!isLocalAuth() || import.meta.env.VITE_API_URL) {
+        try {
+          const remote = await api.getWall(name)
+          if (remote) {
+            hydrate(remote)
+            setState('ready')
+            if (name) void recordPing({ kind: 'wall', id: name }, 'view')
+            return
+          }
+        } catch {
+          /* fallback */
         }
-      } catch {
-        /* fallback */
       }
 
       setState('missing')
@@ -57,11 +73,15 @@ export function PublicViewer() {
         <Logo size="lg" to="/" className="mb-8 [&_span]:text-[var(--text-primary)]" />
         <h1 className="font-display text-3xl sm:text-4xl">@{username}</h1>
         <p className="mt-3 max-w-md text-[var(--text-secondary)]">
-          This wall isn&apos;t published yet. Try{' '}
-          <Link to="/u/local" className="text-[var(--accent-text)] hover:underline">
-            /u/local
-          </Link>{' '}
-          for your saved local wall.
+          This wall isn&apos;t published yet. Open the editor, use Share → Publish wall, then return here.
+          {isLocalAuth() ? (
+            <>
+              {' '}
+              <Link to="/edit" className="text-[var(--accent-text)] hover:underline">
+                Go to editor
+              </Link>
+            </>
+          ) : null}
         </p>
         <Link to="/edit" className="btn-primary mt-8">
           Edit your wall

@@ -80,6 +80,7 @@ export function OmniBar({ variant = 'floating' }: Props) {
           }}
           onFocus={() => {
             setOpen(true)
+            void useOmniStore.getState().refresh()
           }}
           onKeyDown={(e) => {
             if (e.key === 'ArrowDown') {

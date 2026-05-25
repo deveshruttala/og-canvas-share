@@ -1,100 +1,52 @@
 import type { ProviderResult } from '@/providers/types'
-import { getProviderKey } from '@/lib/provider-config'
+import { hasKey } from '@/lib/provider-config'
+import { searchCuratedAudio } from '@/providers/audio-sources/curated'
+import { searchInternetArchiveAudio } from '@/providers/audio-sources/archive'
+import { searchPixabayAudio } from '@/providers/audio-sources/pixabay-audio'
+import { searchFreesoundAudio } from '@/providers/audio-sources/freesound'
+import { searchItunesMusic } from '@/providers/audio-sources/itunes'
+import type { OmniItem } from '@/providers/types'
 
-const DEMO_AUDIO = [
-  {
-    id: 'demo-ocean',
-    title: 'Ocean waves at sunset',
-    subtitle: 'Demo · ambience',
-    duration: 83,
-    source: 'Demo',
-  },
-]
+const MAX_ITEMS = 32
 
-async function searchFreesound(q: string, token?: string): Promise<ProviderResult['section']['items']> {
-  if (!token) return []
-  const res = await fetch(
-    `https://freesound.org/apiv2/search/text/?query=${encodeURIComponent(q)}&fields=id,name,previews,duration,username&filter=license:%22Creative+Commons+0%22&token=${token}&page_size=6`,
-  )
-  if (!res.ok) return []
-  const data = await res.json()
-  return (data.results ?? []).map(
-    (s: { id: number; name: string; duration: number; username: string; previews: { 'preview-hq-mp3'?: string } }) => ({
-      id: `freesound-${s.id}`,
-      kind: 'audio' as const,
-      title: s.name,
-      subtitle: s.username,
-      previewUrl: s.previews['preview-hq-mp3'],
-      duration: Math.round(s.duration),
-      source: 'Freesound',
-      payload: {
-        src: s.previews['preview-hq-mp3'],
-        title: s.name,
-        artist: s.username,
-        badge: 'Freesound',
-      },
-    }),
-  )
-}
-
-async function searchDeezer(q: string): Promise<ProviderResult['section']['items']> {
-  try {
-    const res = await fetch(`https://api.deezer.com/search?q=${encodeURIComponent(q)}&limit=6`)
-    if (!res.ok) return []
-    const data = await res.json()
-    return (data.data ?? [])
-    .filter((t: { preview?: string }) => t.preview)
-    .map(
-      (t: {
-        id: number
-        title: string
-        artist: { name: string }
-        album: { cover_medium?: string }
-        preview: string
-        duration: number
-      }) => ({
-        id: `deezer-${t.id}`,
-        kind: 'audio' as const,
-        title: t.title,
-        subtitle: t.artist.name,
-        thumb: t.album.cover_medium,
-        previewUrl: t.preview,
-        duration: t.duration,
-        source: 'Deezer',
-        payload: {
-          src: t.preview,
-          title: t.title,
-          artist: t.artist.name,
-          cover: t.album.cover_medium,
-          badge: 'Deezer',
-        },
-      }),
-    )
-  } catch {
-    return []
+function dedupeItems(items: OmniItem[]): OmniItem[] {
+  const seen = new Set<string>()
+  const out: OmniItem[] = []
+  for (const item of items) {
+    const src = String(item.payload?.src ?? item.previewUrl ?? '')
+    const key = src || item.id
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(item)
   }
+  return out
 }
 
 export async function searchAudio(query: string, browse = false): Promise<ProviderResult | null> {
   const raw = query.trim()
   if (raw.length < 2 && !browse) return null
-  const q = raw.length < 2 ? 'ambient' : raw
+  const q = raw.length < 2 ? 'lofi chill' : raw
 
-  const freesoundToken = getProviderKey('freesound')
-  const [fx, music] = await Promise.all([searchFreesound(q, freesoundToken), searchDeezer(q)])
+  const [itunes, curated, archive, pixabay, freesound] = await Promise.all([
+    searchItunesMusic(q, 14),
+    Promise.resolve(searchCuratedAudio(q, 12)),
+    searchInternetArchiveAudio(q, 4),
+    searchPixabayAudio(q, 6),
+    searchFreesoundAudio(q, 6),
+  ])
 
-  let items = [...fx, ...music]
-  if (items.length === 0 && !freesoundToken) {
-    items = DEMO_AUDIO.map((d) => ({
-      id: d.id,
-      kind: 'audio' as const,
-      title: d.title,
-      subtitle: d.subtitle,
-      duration: d.duration,
-      source: d.source,
-      payload: { title: d.title, badge: 'Demo' },
-    }))
-  }
+  let items = dedupeItems([...itunes, ...curated, ...pixabay, ...freesound, ...archive])
+  items = items.filter((item) => Boolean(item.payload?.src ?? item.previewUrl))
+
+  const sources: string[] = []
+  if (itunes.length) sources.push('iTunes previews')
+  sources.push('Mixkit SFX')
+  if (hasKey('pixabay')) sources.push('Pixabay')
+  if (hasKey('freesound')) sources.push('Freesound')
+  if (archive.length) sources.push('Internet Archive')
+
+  const needsKey =
+    !itunes.length && !hasKey('pixabay') && !hasKey('freesound') ? 'pixabay' : undefined
 
   if (items.length === 0) return null
 
@@ -102,9 +54,13 @@ export async function searchAudio(query: string, browse = false): Promise<Provid
     section: {
       id: 'audio',
       title: 'Audio',
-      source: [freesoundToken && 'Freesound', 'Deezer'].filter(Boolean).join(' + ') || 'Demo',
-      needsKey: !freesoundToken ? 'freesound' : undefined,
-      items: items.slice(0, 10),
+      source: sources.join(' · '),
+      needsKey,
+      items: items.slice(0, MAX_ITEMS),
+      more: items.length > MAX_ITEMS,
+      error: !itunes.length
+        ? 'Song search uses iTunes previews (no key). Add Pixabay/Freesound keys for more SFX.'
+        : undefined,
     },
   }
 }

@@ -532,15 +532,24 @@
   position: absolute;
   left: 1rem;
   bottom: calc(6.5rem + env(safe-area-inset-bottom));
-  z-index: 45;
+  z-index: 215;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.4rem 0.75rem;
   border-radius: 999px;
   border: 1px solid #262626;
-  background: rgba(5, 5, 8, 0.85);
+  background: rgba(5, 5, 8, 0.92);
   backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.wall-timeline-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .wall-timeline-track {
@@ -549,11 +558,29 @@
 }
 
 .wall-timeline-node {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
   border-radius: 999px;
   background: #404040;
-  transition: opacity 0.2s, background 0.2s;
+  cursor: pointer;
+  transition: transform 0.12s, background 0.15s, box-shadow 0.15s;
+}
+
+.wall-timeline-node:hover:not(:disabled) {
+  transform: scale(1.2);
+  background: #737373;
+}
+
+.wall-timeline-node-active {
+  background: #beee1d;
+  box-shadow: 0 0 8px rgba(190, 238, 29, 0.55);
+}
+
+.wall-timeline-node:disabled {
+  cursor: default;
+  opacity: 0.25;
 }
 
 .wall-timeline-btn {

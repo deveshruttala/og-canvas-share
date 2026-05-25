@@ -23,6 +23,7 @@ import {
   WALL_CAMERA,
   WALL_TLDRAW_OPTIONS,
 } from '@/editor/wall-editor-api'
+import { resetTimelineMarks } from '@/editor/wall-timeline-history'
 import {
   fixInvisibleWallHosts,
   sanitizeWallShapeMetas,
@@ -110,7 +111,10 @@ function WallTldrawEditorInner({ readOnly = false, className }: Props) {
         if (!readOnlyRef.current) notifyZoom(editor.getZoomLevel())
       })
 
-      if (!readOnlyRef.current) notifyZoom(editor.getZoomLevel())
+      if (!readOnlyRef.current) {
+        notifyZoom(editor.getZoomLevel())
+        resetTimelineMarks(editor)
+      }
 
       let onResize: (() => void) | undefined
       if (readOnlyRef.current) {

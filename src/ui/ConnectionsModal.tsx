@@ -10,8 +10,14 @@ const FIELDS: Array<{
   hint: string
   docs: string
 }> = [
-  { key: 'unsplash', label: 'Unsplash', hint: 'Access Key', docs: 'https://unsplash.com/developers' },
+  {
+    key: 'pixabay',
+    label: 'Pixabay',
+    hint: 'API Key (recommended)',
+    docs: 'https://pixabay.com/api/docs/',
+  },
   { key: 'pexels', label: 'Pexels', hint: 'API Key', docs: 'https://www.pexels.com/api/' },
+  { key: 'unsplash', label: 'Unsplash', hint: 'Access Key', docs: 'https://unsplash.com/developers' },
   { key: 'giphy', label: 'Giphy', hint: 'API Key', docs: 'https://developers.giphy.com/' },
   { key: 'tenor', label: 'Tenor', hint: 'API Key', docs: 'https://developers.google.com/tenor' },
   { key: 'freesound', label: 'Freesound', hint: 'API Token', docs: 'https://freesound.org/apiv2/apply' },
@@ -44,7 +50,9 @@ export function ConnectionsModal() {
         </div>
 
         <p className="px-5 pt-4 text-xs leading-relaxed text-[var(--text-secondary)]">
-          API keys stay in your browser only — never sent to our backend. Deezer and DuckDuckGo need no key.
+          Keys stay in your browser only — proxied locally, never on our servers. No key: Wikimedia, Met
+          Museum, Art Institute, Iconify, iTunes music previews, Mixkit SFX. Pixabay covers images + audio;
+          Pexels/Unsplash for stock; Giphy/Tenor for GIFs; Freesound for SFX.
         </p>
 
         <div className="space-y-4 p-5">

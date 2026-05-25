@@ -5,6 +5,7 @@ const STORAGE_KEY = 'wall_provider_keys_v1'
 export type ProviderKeys = {
   unsplash?: string
   pexels?: string
+  pixabay?: string
   giphy?: string
   tenor?: string
   freesound?: string
@@ -38,6 +39,7 @@ export function getProviderKey(name: keyof ProviderKeys): string | undefined {
   const envMap: Record<keyof ProviderKeys, string | undefined> = {
     unsplash: import.meta.env.VITE_UNSPLASH_KEY,
     pexels: import.meta.env.VITE_PEXELS_KEY,
+    pixabay: import.meta.env.VITE_PIXABAY_KEY,
     giphy: import.meta.env.VITE_GIPHY_API_KEY,
     tenor: import.meta.env.VITE_TENOR_KEY,
     freesound: import.meta.env.VITE_FREESOUND_TOKEN,

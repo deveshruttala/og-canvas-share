@@ -612,7 +612,7 @@ export const WIDGET_CATALOG: CatalogWidget[] = [
     tags: ['sound', 'rain', 'ambient', 'relax'],
     icon: '🌧️',
     template: 'soundpad',
-    config: { label: 'Rain', frequency: 220, wave: 'sine' },
+    config: { label: 'Rain', sound: 'rain' },
   },
   {
     id: 'soundpad-bell',
@@ -622,7 +622,7 @@ export const WIDGET_CATALOG: CatalogWidget[] = [
     tags: ['sound', 'bell', 'chime', 'alert'],
     icon: '🔔',
     template: 'soundpad',
-    config: { label: 'Bell', frequency: 880, wave: 'sine' },
+    config: { label: 'Bell', sound: 'bell' },
   },
   {
     id: 'soundpad-chime',
@@ -632,7 +632,7 @@ export const WIDGET_CATALOG: CatalogWidget[] = [
     tags: ['sound', 'chime', 'ambient', 'calm'],
     icon: '🎐',
     template: 'soundpad',
-    config: { label: 'Wind Chime', frequency: 660, wave: 'triangle' },
+    config: { label: 'Wind Chime', sound: 'chime' },
   },
   {
     id: 'soundpad-success',
@@ -642,7 +642,7 @@ export const WIDGET_CATALOG: CatalogWidget[] = [
     tags: ['sound', 'success', 'ding', 'celebration'],
     icon: '✅',
     template: 'soundpad',
-    config: { label: 'Success', frequency: 1046, wave: 'square' },
+    config: { label: 'Success', sound: 'success' },
   },
   {
     id: 'soundpad-notification',
@@ -652,7 +652,7 @@ export const WIDGET_CATALOG: CatalogWidget[] = [
     tags: ['sound', 'notification', 'alert', 'pop'],
     icon: '📣',
     template: 'soundpad',
-    config: { label: 'Notification', frequency: 523, wave: 'sawtooth' },
+    config: { label: 'Notification', sound: 'notification' },
   },
   {
     id: 'soundpad-applause',
@@ -662,7 +662,17 @@ export const WIDGET_CATALOG: CatalogWidget[] = [
     tags: ['sound', 'applause', 'celebration', 'fun'],
     icon: '👏',
     template: 'soundpad',
-    config: { label: 'Applause', frequency: 440, wave: 'sine' },
+    config: { label: 'Applause', sound: 'applause' },
+  },
+  {
+    id: 'soundpad-synth',
+    name: 'Synth Pad',
+    category: 'music',
+    description: 'Four-note oscillator pad (C E G A).',
+    tags: ['sound', 'synth', 'music', 'notes'],
+    icon: '🎹',
+    template: 'soundpad',
+    config: { label: 'Synth Pad', frequency: 440, wave: 'sine' },
   },
 
   // ── QR codes (8) ─────────────────────────────────────────────────────────
@@ -1154,26 +1164,6 @@ export const WIDGET_CATALOG: CatalogWidget[] = [
     icon: '💧',
     template: 'progress',
     config: { label: 'Water', value: 5, max: 8 },
-  },
-  {
-    id: 'soundpad-applause',
-    name: 'Applause',
-    category: 'fun',
-    description: 'Crowd applause sound pad.',
-    tags: ['sound', 'applause', 'celebration'],
-    icon: '👏',
-    template: 'soundpad',
-    config: { label: 'Applause', sound: 'applause' },
-  },
-  {
-    id: 'soundpad-notification',
-    name: 'Notification Ping',
-    category: 'fun',
-    description: 'Short notification chime.',
-    tags: ['sound', 'alert', 'ping'],
-    icon: '🔔',
-    template: 'soundpad',
-    config: { label: 'Ping', sound: 'notification' },
   },
   {
     id: 'qr-wifi',

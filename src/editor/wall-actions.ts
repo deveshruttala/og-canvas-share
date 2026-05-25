@@ -22,10 +22,18 @@ import {
   ZOOM_STEPS,
   zoomToWallPage,
 } from '@/editor/wall-editor-api'
+import {
+  canTimelineRedo,
+  canTimelineUndo,
+  pushTimelineMark,
+  timelineRedo,
+  timelineUndo,
+} from '@/editor/wall-timeline-history'
 import { createWallLinkShape, wallHostGeoProps } from '@/editor/wall-host-shape'
 import { detectLinkPlatform, getEmbedUrl } from '@/lib/link-resolver'
 import { blobToDataUrl, compressImage, probeImageSize } from '@/lib/compress-image'
 import { fetchExternalAssetAsDataUrl, isRemoteHttpUrl } from '@/lib/asset-proxy'
+import { getSoundPadSize } from '@/lib/sound-pad-samples'
 import { toJsonMeta } from '@/lib/json-meta'
 import type { CatalogWidget } from '@/widgets/catalog'
 
@@ -164,6 +172,7 @@ export const wallActions = {
       }
       startWallTextEditing(editor, id, { selectAll: true })
     })
+    wallActions.markEditComplete('text')
   },
 
   /** @deprecated Use addTextBox — kept for explicit sticky notes */
@@ -450,27 +459,25 @@ export const wallActions = {
   },
 
   undo() {
-    ed().undo()
+    timelineUndo(ed())
   },
 
   redo() {
-    ed().redo()
+    timelineRedo(ed())
   },
 
   canUndo() {
-    try {
-      return ed().getCanUndo()
-    } catch {
-      return false
-    }
+    return canTimelineUndo(getWallEditor())
   },
 
   canRedo() {
-    try {
-      return ed().getCanRedo()
-    } catch {
-      return false
-    }
+    return canTimelineRedo(getWallEditor())
+  },
+
+  /** Record a timeline step after programmatic canvas changes (widgets, text, etc.). */
+  markEditComplete(label = 'wall-action') {
+    const editor = getWallEditor()
+    if (editor) pushTimelineMark(editor, label)
   },
 
   addEmbed(url: string) {
@@ -670,16 +677,26 @@ export const wallActions = {
     })
   },
 
-  addSoundPad(label = 'Synth Pad', frequency = 440, wave: 'sine' | 'square' | 'sawtooth' | 'triangle' = 'sine', x?: number, y?: number) {
+  addSoundPad(
+    data: {
+      label?: string
+      sound?: string
+      frequency?: number
+      wave?: 'sine' | 'square' | 'sawtooth' | 'triangle'
+    } = {},
+    x?: number,
+    y?: number,
+  ) {
+    const size = getSoundPadSize(data)
     const { x: px, y: py } = place(x, y)
     ed().createShape({
       id: createShapeId(),
       type: 'geo',
-      x: px - 120,
-      y: py - 90,
+      x: px - size.w / 2,
+      y: py - size.h / 2,
       opacity: 0.001,
-      props: wallHostGeoProps(240, 180),
-      meta: toJsonMeta({ wallType: 'soundpad', wallData: { label, frequency, wave } }),
+      props: wallHostGeoProps(size.w, size.h),
+      meta: toJsonMeta({ wallType: 'soundpad', wallData: data }),
     })
   },
 
@@ -778,15 +795,21 @@ export const wallActions = {
       case 'progress':
         wallActions.addProgress(str('title', widget.name), num('current', 42), num('max', 100), str('color', '#beee1d'), x, y)
         break
-      case 'soundpad':
+      case 'soundpad': {
+        const sound = str('sound', '')
         wallActions.addSoundPad(
-          str('label', widget.name),
-          num('frequency', 440),
-          (str('wave', 'sine') as 'sine' | 'square' | 'sawtooth' | 'triangle') || 'sine',
+          sound
+            ? { label: str('label', widget.name), sound }
+            : {
+                label: str('label', widget.name),
+                frequency: num('frequency', 440),
+                wave: (str('wave', 'sine') as 'sine' | 'square' | 'sawtooth' | 'triangle') || 'sine',
+              },
           x,
           y,
         )
         break
+      }
       case 'qr':
         void wallActions.addQr(str('url', 'https://example.com'), x, y)
         break
@@ -812,6 +835,7 @@ export const wallActions = {
       default:
         wallActions.addSticky(widget.name, 'light-green', x, y)
     }
+    wallActions.markEditComplete('widget')
   },
 
   setShapeLinkTo(shapeId: string, linkTo: LinkTo | null) {

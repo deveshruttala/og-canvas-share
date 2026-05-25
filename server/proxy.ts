@@ -85,3 +85,127 @@ export async function proxyMicrolink(
     return new Response('Proxy failed', { status: 502, headers: cors() })
   }
 }
+
+const JSON_ACCEPT = { Accept: 'application/json', 'User-Agent': 'WallCanvas/1.0' }
+
+/** Image search proxies — mirrors vite-image-search-proxy.ts */
+export async function proxyWallImageSearch(
+  provider: string,
+  search: string,
+  req: Request,
+  cors: (h?: Headers) => Headers,
+): Promise<Response> {
+  try {
+    if (provider === 'wikimedia') {
+      const target = `https://commons.wikimedia.org/w/api.php${search}`
+      const upstream = await fetch(target, { headers: JSON_ACCEPT })
+      const body = await upstream.text()
+      return new Response(body, {
+        status: upstream.status,
+        headers: cors(new Headers({ 'Content-Type': 'application/json' })),
+      })
+    }
+
+    const url = new URL(search.startsWith('?') ? `http://x${search}` : `http://x/?${search}`)
+
+    if (provider === 'pixabay') {
+      const key = req.headers.get('x-pixabay-key')
+      if (!key) return new Response(JSON.stringify({ error: 'Missing X-Pixabay-Key' }), { status: 401, headers: cors() })
+      const target = new URL('https://pixabay.com/api/')
+      target.searchParams.set('key', key)
+      target.searchParams.set('q', url.searchParams.get('q') ?? '')
+      target.searchParams.set('image_type', 'photo')
+      target.searchParams.set('per_page', url.searchParams.get('per_page') ?? '24')
+      target.searchParams.set('safesearch', 'true')
+      const upstream = await fetch(target.toString(), { headers: JSON_ACCEPT })
+      const body = await upstream.text()
+      return new Response(body, {
+        status: upstream.status,
+        headers: cors(new Headers({ 'Content-Type': 'application/json' })),
+      })
+    }
+
+    if (provider === 'pexels') {
+      const auth = req.headers.get('authorization')
+      if (!auth) return new Response(JSON.stringify({ error: 'Missing Authorization' }), { status: 401, headers: cors() })
+      const q = url.searchParams.get('q') ?? ''
+      const perPage = url.searchParams.get('per_page') ?? '24'
+      const target = `https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&per_page=${encodeURIComponent(perPage)}`
+      const upstream = await fetch(target, { headers: { ...JSON_ACCEPT, Authorization: auth } })
+      const body = await upstream.text()
+      return new Response(body, {
+        status: upstream.status,
+        headers: cors(new Headers({ 'Content-Type': 'application/json' })),
+      })
+    }
+
+    if (provider === 'unsplash') {
+      const auth = req.headers.get('authorization')
+      if (!auth) return new Response(JSON.stringify({ error: 'Missing Authorization' }), { status: 401, headers: cors() })
+      const target = new URL('https://api.unsplash.com/search/photos')
+      target.searchParams.set('query', url.searchParams.get('query') ?? url.searchParams.get('q') ?? '')
+      target.searchParams.set('per_page', url.searchParams.get('per_page') ?? '24')
+      target.searchParams.set('content_filter', 'high')
+      const upstream = await fetch(target, { headers: { ...JSON_ACCEPT, Authorization: auth } })
+      const body = await upstream.text()
+      return new Response(body, {
+        status: upstream.status,
+        headers: cors(new Headers({ 'Content-Type': 'application/json' })),
+      })
+    }
+
+    return new Response('Unknown provider', { status: 404, headers: cors() })
+  } catch {
+    return new Response('Proxy failed', { status: 502, headers: cors() })
+  }
+}
+
+/** Audio search proxies — mirrors vite-audio-search-proxy.ts */
+export async function proxyWallAudioSearch(
+  provider: string,
+  search: string,
+  req: Request,
+  cors: (h?: Headers) => Headers,
+): Promise<Response> {
+  try {
+    const url = new URL(search.startsWith('?') ? `http://x${search}` : `http://x/?${search}`)
+
+    if (provider === 'pixabay') {
+      const key = req.headers.get('x-pixabay-key')
+      if (!key) return new Response(JSON.stringify({ error: 'Missing X-Pixabay-Key' }), { status: 401, headers: cors() })
+      const target = new URL('https://pixabay.com/api/audio/')
+      target.searchParams.set('key', key)
+      target.searchParams.set('q', url.searchParams.get('q') ?? '')
+      target.searchParams.set('per_page', url.searchParams.get('per_page') ?? '12')
+      const upstream = await fetch(target.toString(), { headers: JSON_ACCEPT })
+      const body = await upstream.text()
+      return new Response(body, {
+        status: upstream.status,
+        headers: cors(new Headers({ 'Content-Type': 'application/json' })),
+      })
+    }
+
+    if (provider === 'freesound') {
+      const token = req.headers.get('x-freesound-token')
+      if (!token) {
+        return new Response(JSON.stringify({ error: 'Missing X-Freesound-Token' }), { status: 401, headers: cors() })
+      }
+      const target = new URL('https://freesound.org/apiv2/search/text/')
+      target.searchParams.set('query', url.searchParams.get('q') ?? '')
+      target.searchParams.set('fields', 'id,name,previews,duration,username')
+      target.searchParams.set('filter', 'license:"Creative Commons 0"')
+      target.searchParams.set('token', token)
+      target.searchParams.set('page_size', url.searchParams.get('page_size') ?? '8')
+      const upstream = await fetch(target.toString(), { headers: JSON_ACCEPT })
+      const body = await upstream.text()
+      return new Response(body, {
+        status: upstream.status,
+        headers: cors(new Headers({ 'Content-Type': 'application/json' })),
+      })
+    }
+
+    return new Response('Unknown provider', { status: 404, headers: cors() })
+  } catch {
+    return new Response('Proxy failed', { status: 502, headers: cors() })
+  }
+}

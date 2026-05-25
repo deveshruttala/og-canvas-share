@@ -1,6 +1,6 @@
 import type { OmniItem, ProviderResult } from '@/providers/types'
 import { getProviderKey } from '@/lib/provider-config'
-import { displayAssetUrl } from '@/lib/asset-proxy'
+import { displayThumbUrl } from '@/lib/asset-proxy'
 
 const OPENVERSE_GIF_BASE = '/openverse-api/v1/images/'
 
@@ -205,7 +205,7 @@ function toPickItem(item: OmniItem): GifPickItem {
     id: item.id,
     title: item.title,
     url,
-    thumb: displayAssetUrl(item.thumb ?? url),
+    thumb: displayThumbUrl(item.thumb ?? url),
   }
 }
 
