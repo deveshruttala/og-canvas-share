@@ -2,7 +2,19 @@
  * Floating inspector HUD — rotation, layers, lock, delete, gradients & borders.
  */
 import { useEffect, useState } from 'react'
-import { Lock, Unlock, ArrowDown, Link2, Palette, ExternalLink, Rocket, Type } from 'lucide-react'
+import {
+  Lock,
+  Unlock,
+  ArrowDown,
+  Link2,
+  Palette,
+  ExternalLink,
+  Rocket,
+  Type,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+} from 'lucide-react'
 import { useEditor, useValue } from '@tldraw/editor'
 import { WALL_FRAME_ID } from '@/editor/wall-editor-api'
 import { getWallShapeKind, getWallShapeLabel, wallActions } from '@/editor/wall-actions'
@@ -11,7 +23,9 @@ import { wallMetaToWidgetConfig } from '@/lib/widget-render'
 import { useAuthStore } from '@/store/auth.store'
 import {
   CARD_BG_PRESETS,
+  DISPLAY_MODE_OPTIONS,
   FONT_OPTIONS,
+  normalizeWallTextStyleFromShape,
   readWallTextBoxStyle,
   SIZE_OPTIONS,
   STICKY_COLOR_HEX,
@@ -22,6 +36,7 @@ import {
   type WallTextDisplayMode,
 } from '@/lib/wall-text-style'
 import { WALL_BORDER_PRESETS, WALL_GRADIENT_PRESETS } from '@/lib/wall-style-presets'
+import { AUDIO_PLAYER_THEMES, VIDEO_PLAYER_THEMES } from '@/lib/wall-player-presets'
 import { cn } from '@/lib/cn'
 import { toJsonMeta } from '@/lib/json-meta'
 import { startWallTextEditing } from '@/editor/wall-text-editing'
@@ -44,15 +59,23 @@ export function WallInspector() {
 
   const selectionKey = selection?.ids.join(',') ?? ''
   const primary = selection?.shapes[0]
+  const primaryMeta = (primary?.meta ?? {}) as Record<string, unknown>
+  const primaryWallType = primaryMeta.wallType as string | undefined
   const isTextSelection =
     primary?.type === 'text' || primary?.type === 'note'
+  const isAudioSelection = primaryWallType === 'audio'
+  const isVideoSelection = primaryWallType === 'video'
   const multiSelected = (selection?.ids.length ?? 0) > 1
 
   useEffect(() => {
-    if (isTextSelection && !multiSelected && selectionKey) {
+    if (
+      (isTextSelection || isAudioSelection || isVideoSelection) &&
+      !multiSelected &&
+      selectionKey
+    ) {
       setStyleExpandedFor(selectionKey)
     }
-  }, [selectionKey, isTextSelection, multiSelected])
+  }, [selectionKey, isTextSelection, isAudioSelection, isVideoSelection, multiSelected])
 
   if (!selection) return null
 
@@ -62,16 +85,22 @@ export function WallInspector() {
 
   const rotationDeg = Math.round((primary.rotation * 180) / Math.PI)
   const locked = selection.shapes.every((s) => s?.isLocked)
-  const meta = (primary.meta ?? {}) as Record<string, unknown>
-  const wallStyle = (meta.wallStyle ?? {}) as { gradient?: string; borderDash?: string; gradientId?: string }
+  const meta = primaryMeta
+  const wallStyle = (meta.wallStyle ?? {}) as {
+    gradient?: string
+    borderDash?: string
+    gradientId?: string
+    playerThemeId?: string
+  }
   const wallData = (meta.wallData ?? {}) as Record<string, unknown>
   const linkTo = meta.linkTo as { url?: string } | undefined
-  const wallType = meta.wallType as string | undefined
+  const wallType = primaryWallType
   const isWidget = wallType === 'widget'
   const isProgress = wallType === 'progress'
   const isSoundpad = wallType === 'soundpad'
   const isPolaroid = wallType === 'polaroid'
-  const isAudio = wallType === 'audio'
+  const isAudio = isAudioSelection
+  const isVideo = isVideoSelection
   const isQr = wallType === 'qr'
   const isLink = wallType === 'link'
   const isImage = primary.type === 'image'
@@ -79,13 +108,16 @@ export function WallInspector() {
   const isTextBox = primary.type === 'text'
   const isTextContent = isNote || isTextBox
   const textStyle = isTextContent
-    ? readWallTextBoxStyle({
-        ...meta,
-        wallTextBox: {
-          ...readWallTextBoxStyle(meta),
-          mode: isNote ? 'sticky' : readWallTextBoxStyle(meta).mode,
+    ? normalizeWallTextStyleFromShape(
+        {
+          ...meta,
+          wallTextBox: {
+            ...readWallTextBoxStyle(meta),
+            mode: isNote ? 'sticky' : readWallTextBoxStyle(meta).mode,
+          },
         },
-      })
+        primary.props as { size?: string; scale?: number },
+      )
     : null
   const kind = getWallShapeKind(primary)
   const label = getWallShapeLabel(primary)
@@ -127,6 +159,10 @@ export function WallInspector() {
     updateMeta({ wallStyle: { ...wallStyle, gradient: css, gradientId: id } })
   }
 
+  const applyPlayerTheme = (playerThemeId: string) => {
+    updateMeta({ wallStyle: { ...wallStyle, playerThemeId } })
+  }
+
   const applyBorder = (dash: string) => {
     const shape = primary
     if (shape.type === 'geo') {
@@ -141,6 +177,7 @@ export function WallInspector() {
     isSoundpad ||
     isPolaroid ||
     isAudio ||
+    isVideo ||
     isQr ||
     primary.type === 'geo' ||
     isTextContent
@@ -297,6 +334,8 @@ export function WallInspector() {
             <Rocket className="h-3.5 w-3.5" />
           </button>
         )}
+
+        <span className="wall-inspector-bar-spacer" aria-hidden />
 
         <button
           type="button"
@@ -462,15 +501,95 @@ export function WallInspector() {
           )}
 
           {isAudio && (
-            <div className="wall-inspector-tray-section">
-              <p className="wall-inspector-tray-title">Audio title</p>
-              <input
-                type="text"
-                placeholder="Track title"
-                defaultValue={String(wallData.title ?? '')}
-                className="wall-inspector-input w-full"
-                onBlur={(e) => updateMeta({ wallData: { ...wallData, title: e.target.value } })}
-              />
+            <div className="wall-inspector-player-panel">
+              <p className="wall-inspector-tray-title">Player theme</p>
+              <div className="wall-inspector-player-themes">
+                {AUDIO_PLAYER_THEMES.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    title={t.label}
+                    className={cn(
+                      'wall-inspector-player-theme',
+                      wallStyle.playerThemeId === t.id ||
+                        (!wallStyle.playerThemeId && t.id === 'neon-lime')
+                        ? 'wall-inspector-player-theme--active'
+                        : '',
+                    )}
+                    style={{
+                      background: t.background,
+                      borderColor:
+                        wallStyle.playerThemeId === t.id ||
+                        (!wallStyle.playerThemeId && t.id === 'neon-lime')
+                          ? t.accent
+                          : 'transparent',
+                    }}
+                    onClick={() => applyPlayerTheme(t.id)}
+                  >
+                    <span className="wall-inspector-player-theme-dot" style={{ background: t.accent }} />
+                    <span className="wall-inspector-player-theme-label">{t.label}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="wall-inspector-tray-section mt-3 space-y-2">
+                <input
+                  type="text"
+                  placeholder="Track title"
+                  defaultValue={String(wallData.title ?? '')}
+                  className="wall-inspector-input w-full"
+                  onBlur={(e) => updateMeta({ wallData: { ...wallData, title: e.target.value } })}
+                />
+                <input
+                  type="text"
+                  placeholder="Artist / subtitle"
+                  defaultValue={String(wallData.artist ?? '')}
+                  className="wall-inspector-input w-full"
+                  onBlur={(e) => updateMeta({ wallData: { ...wallData, artist: e.target.value } })}
+                />
+              </div>
+            </div>
+          )}
+
+          {isVideo && (
+            <div className="wall-inspector-player-panel">
+              <p className="wall-inspector-tray-title">Player theme</p>
+              <div className="wall-inspector-player-themes">
+                {VIDEO_PLAYER_THEMES.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    title={t.label}
+                    className={cn(
+                      'wall-inspector-player-theme',
+                      wallStyle.playerThemeId === t.id ||
+                        (!wallStyle.playerThemeId && t.id === 'cinema-dark')
+                        ? 'wall-inspector-player-theme--active'
+                        : '',
+                    )}
+                    style={{
+                      background: t.background,
+                      borderColor:
+                        wallStyle.playerThemeId === t.id ||
+                        (!wallStyle.playerThemeId && t.id === 'cinema-dark')
+                          ? t.accent
+                          : 'transparent',
+                    }}
+                    onClick={() => applyPlayerTheme(t.id)}
+                  >
+                    <span className="wall-inspector-player-theme-dot" style={{ background: t.accent }} />
+                    <span className="wall-inspector-player-theme-label">{t.label}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="wall-inspector-tray-section mt-3">
+                <input
+                  type="text"
+                  placeholder="Video title"
+                  defaultValue={String(wallData.title ?? '')}
+                  className="wall-inspector-input w-full"
+                  onBlur={(e) => updateMeta({ wallData: { ...wallData, title: e.target.value } })}
+                />
+              </div>
             </div>
           )}
 
@@ -488,192 +607,159 @@ export function WallInspector() {
           )}
 
           {isTextContent && textStyle && (
-            <>
-              <div className="wall-inspector-tray-section">
-                <p className="wall-inspector-tray-title">Quick styles</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {TEXT_STYLE_PRESETS.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className="rounded-lg bg-white/5 px-2 py-1 text-[10px] font-bold text-neutral-300 hover:bg-[#beee1d]/20 hover:text-[#beee1d]"
-                      onClick={() => wallActions.applyTextStylePreset(selection.ids, p.id)}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
+            <div className="wall-inspector-text">
+              <div className="wall-inspector-tabs" role="tablist" aria-label="Text display mode">
+                {DISPLAY_MODE_OPTIONS.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={textStyle.mode === m.id}
+                    className={cn(
+                      'wall-inspector-tab',
+                      textStyle.mode === m.id && 'wall-inspector-tab--active',
+                    )}
+                    onClick={() => setTextMode(m.id)}
+                  >
+                    {m.label}
+                  </button>
+                ))}
               </div>
 
-              <div className="wall-inspector-tray-section">
-                <p className="wall-inspector-tray-title">Display</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {(
-                    [
-                      { id: 'plain' as const, label: 'Plain text' },
-                      { id: 'card' as const, label: 'Card' },
-                      { id: 'sticky' as const, label: 'Sticky note' },
-                    ] as const
-                  ).map((m) => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      className={cn(
-                        'rounded-lg px-2.5 py-1.5 text-[10px] font-bold',
-                        textStyle.mode === m.id
-                          ? 'bg-[#beee1d] text-black'
-                          : 'bg-white/5 text-neutral-400 hover:bg-white/10',
-                      )}
-                      onClick={() => setTextMode(m.id)}
-                    >
-                      {m.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="wall-inspector-tray-section">
-                <p className="wall-inspector-tray-title">Font</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {FONT_OPTIONS.map((f) => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      title={f.hint}
-                      className={cn(
-                        'rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase',
-                        textStyle.font === f.id
-                          ? 'bg-[#beee1d] text-black'
-                          : 'bg-white/5 text-neutral-400',
-                      )}
-                      onClick={() => wallActions.updateTextBoxTypography(selection.ids, { font: f.id })}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="wall-inspector-tray-section">
-                <p className="wall-inspector-tray-title">Size</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {SIZE_OPTIONS.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      className={cn(
-                        'min-w-[2rem] rounded-lg px-2.5 py-1 text-[10px] font-bold',
-                        textStyle.size === s.id
-                          ? 'bg-[#beee1d] text-black'
-                          : 'bg-white/5 text-neutral-400',
-                      )}
-                      title={s.hint}
-                      onClick={() => wallActions.updateTextBoxTypography(selection.ids, { size: s.id })}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="wall-inspector-tray-section">
-                <p className="wall-inspector-tray-title">Alignment</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {TEXT_ALIGN_OPTIONS.map((a) => (
-                    <button
-                      key={a.id}
-                      type="button"
-                      className={cn(
-                        'rounded-lg px-3 py-1 text-[10px] font-bold',
-                        textStyle.textAlign === a.id
-                          ? 'bg-[#beee1d] text-black'
-                          : 'bg-white/5 text-neutral-400',
-                      )}
-                      onClick={() =>
-                        wallActions.updateTextBoxTypography(selection.ids, { textAlign: a.id })
-                      }
-                    >
-                      {a.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="wall-inspector-tray-section">
-                <p className="wall-inspector-tray-title">Text color</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {TEXT_COLOR_OPTIONS.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      title={c.label}
-                      className={cn(
-                        'h-7 w-7 rounded-full border-2',
-                        textStyle.color === c.id ? 'border-[#beee1d]' : 'border-white/15',
-                        c.id === 'white' && 'ring-1 ring-neutral-600',
-                      )}
-                      style={{ background: TEXT_COLOR_SWATCH[c.id] }}
-                      onClick={() => wallActions.updateTextBoxTypography(selection.ids, { color: c.id })}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {textStyle.mode === 'card' && (
-                <div className="wall-inspector-tray-section">
-                  <p className="wall-inspector-tray-title">Card background</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {CARD_BG_PRESETS.map((bg) => (
+              <div className="wall-inspector-text-grid">
+                <section className="wall-inspector-panel wall-inspector-panel--full">
+                  <p className="wall-inspector-tray-title">Quick styles</p>
+                  <div className="wall-inspector-chip-row">
+                    {TEXT_STYLE_PRESETS.map((p) => (
                       <button
-                        key={bg.id}
+                        key={p.id}
                         type="button"
-                        title={bg.label}
+                        className="wall-inspector-chip-btn"
+                        onClick={() => wallActions.applyTextStylePreset(selection.ids, p.id)}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="wall-inspector-panel">
+                  <p className="wall-inspector-tray-title">Font</p>
+                  <div className="wall-inspector-segment wall-inspector-segment--4">
+                    {FONT_OPTIONS.map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        title={f.hint}
                         className={cn(
-                          'h-8 w-12 rounded-lg border-2',
-                          textStyle.cardBg === bg.css ? 'border-[#beee1d]' : 'border-transparent',
+                          'wall-inspector-segment-btn wall-inspector-font-btn',
+                          textStyle.font === f.id && 'wall-inspector-segment-btn--active',
                         )}
-                        style={{ background: bg.css }}
-                        onClick={() => {
-                          for (const id of selection.ids) {
-                            const shape = editor.getShape(id)
-                            if (!shape) continue
-                            editor.updateShape({
-                              id,
-                              type: shape.type,
-                              meta: toJsonMeta({
-                                ...(shape.meta as Record<string, unknown>),
-                                wallTextBox: {
-                                  ...readWallTextBoxStyle(shape.meta as Record<string, unknown>),
-                                  cardBg: bg.css,
-                                },
-                              }),
+                        onClick={() =>
+                          wallActions.updateTextBoxTypography(selection.ids, { font: f.id })
+                        }
+                      >
+                        <span className="wall-inspector-font-sample" data-font={f.id}>
+                          {f.sample}
+                        </span>
+                        <span>{f.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="wall-inspector-panel">
+                  <p className="wall-inspector-tray-title">Size</p>
+                  <div className="wall-inspector-segment wall-inspector-segment--7">
+                    {SIZE_OPTIONS.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        title={`${s.hint} · ~${s.px}px`}
+                        className={cn(
+                          'wall-inspector-segment-btn',
+                          textStyle.size === s.id && 'wall-inspector-segment-btn--active',
+                        )}
+                        onClick={() =>
+                          wallActions.updateTextBoxTypography(selection.ids, { size: s.id })
+                        }
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="wall-inspector-panel">
+                  <p className="wall-inspector-tray-title">Alignment</p>
+                  <div className="wall-inspector-segment wall-inspector-segment--3">
+                    {TEXT_ALIGN_OPTIONS.map((a) => {
+                      const Icon =
+                        a.id === 'start'
+                          ? AlignLeft
+                          : a.id === 'middle'
+                            ? AlignCenter
+                            : AlignRight
+                      return (
+                        <button
+                          key={a.id}
+                          type="button"
+                          title={a.label}
+                          className={cn(
+                            'wall-inspector-segment-btn wall-inspector-align-btn',
+                            textStyle.textAlign === a.id && 'wall-inspector-segment-btn--active',
+                          )}
+                          onClick={() =>
+                            wallActions.updateTextBoxTypography(selection.ids, {
+                              textAlign: a.id,
                             })
                           }
-                        }}
+                        >
+                          <Icon className="h-3.5 w-3.5" />
+                          <span>{a.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </section>
+
+                <section className="wall-inspector-panel wall-inspector-panel--full">
+                  <p className="wall-inspector-tray-title">Text color</p>
+                  <div className="wall-inspector-swatch-grid">
+                    {TEXT_COLOR_OPTIONS.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        title={c.label}
+                        className={cn(
+                          'wall-inspector-swatch',
+                          textStyle.color === c.id && 'wall-inspector-swatch--active',
+                          c.id === 'white' && 'wall-inspector-swatch--light',
+                        )}
+                        style={{ background: TEXT_COLOR_SWATCH[c.id] }}
+                        onClick={() =>
+                          wallActions.updateTextBoxTypography(selection.ids, { color: c.id })
+                        }
                       />
                     ))}
                   </div>
-                </div>
-              )}
+                </section>
 
-              {textStyle.mode === 'sticky' && (
-                <div className="wall-inspector-tray-section">
-                  <p className="wall-inspector-tray-title">Sticky color</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {(Object.keys(STICKY_COLOR_HEX) as Array<keyof typeof STICKY_COLOR_HEX>).map(
-                      (color) => (
+                {textStyle.mode === 'card' && (
+                  <section className="wall-inspector-panel wall-inspector-panel--full">
+                    <p className="wall-inspector-tray-title">Card background</p>
+                    <div className="wall-inspector-swatch-grid wall-inspector-swatch-grid--wide">
+                      {CARD_BG_PRESETS.map((bg) => (
                         <button
-                          key={color}
+                          key={bg.id}
                           type="button"
+                          title={bg.label}
                           className={cn(
-                            'h-7 w-7 rounded-full border-2 border-white/10',
-                            textStyle.stickyColor === color && 'border-[#beee1d]',
+                            'wall-inspector-card-swatch',
+                            textStyle.cardBg === bg.css && 'wall-inspector-card-swatch--active',
                           )}
-                          style={{ background: STICKY_COLOR_HEX[color] }}
+                          style={{ background: bg.css }}
                           onClick={() => {
-                            if (primary.type === 'note') {
-                              updatePrimary({ props: { ...(primary.props as object), color } })
-                            }
                             for (const id of selection.ids) {
                               const shape = editor.getShape(id)
                               if (!shape) continue
@@ -684,19 +770,61 @@ export function WallInspector() {
                                   ...(shape.meta as Record<string, unknown>),
                                   wallTextBox: {
                                     ...readWallTextBoxStyle(shape.meta as Record<string, unknown>),
-                                    stickyColor: color,
+                                    cardBg: bg.css,
                                   },
                                 }),
                               })
                             }
                           }}
                         />
-                      ),
-                    )}
-                  </div>
-                </div>
-              )}
-            </>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {textStyle.mode === 'sticky' && (
+                  <section className="wall-inspector-panel wall-inspector-panel--full">
+                    <p className="wall-inspector-tray-title">Sticky color</p>
+                    <div className="wall-inspector-swatch-grid">
+                      {(Object.keys(STICKY_COLOR_HEX) as Array<keyof typeof STICKY_COLOR_HEX>).map(
+                        (color) => (
+                          <button
+                            key={color}
+                            type="button"
+                            title={color}
+                            className={cn(
+                              'wall-inspector-swatch',
+                              textStyle.stickyColor === color && 'wall-inspector-swatch--active',
+                            )}
+                            style={{ background: STICKY_COLOR_HEX[color] }}
+                            onClick={() => {
+                              if (primary.type === 'note') {
+                                updatePrimary({ props: { ...(primary.props as object), color } })
+                              }
+                              for (const id of selection.ids) {
+                                const shape = editor.getShape(id)
+                                if (!shape) continue
+                                editor.updateShape({
+                                  id,
+                                  type: shape.type,
+                                  meta: toJsonMeta({
+                                    ...(shape.meta as Record<string, unknown>),
+                                    wallTextBox: {
+                                      ...readWallTextBoxStyle(shape.meta as Record<string, unknown>),
+                                      stickyColor: color,
+                                    },
+                                  }),
+                                })
+                              }
+                            }}
+                          />
+                        ),
+                      )}
+                    </div>
+                  </section>
+                )}
+              </div>
+            </div>
           )}
         </div>
       )}

@@ -40,6 +40,22 @@ export type ThemeId =
   | 'blossom'
   | 'comic'
   | 'espresso'
+  | 'sapphire'
+  | 'ember'
+  | 'orchid'
+  | 'sand'
+  | 'ink'
+  | 'nordic'
+  | 'vintage'
+  | 'limeade'
+  | 'twilight'
+  | 'mango'
+  | 'glacier'
+  | 'copper'
+  | 'grape'
+  | 'storm'
+  | 'matcha'
+  | 'blush'
 
 export type ElementType =
   | 'text'
@@ -64,6 +80,9 @@ export type ElementStyle = {
   borderRadius?: number
   shadow?: ShadowSize
   border?: string
+  gradient?: string
+  /** Audio / video overlay theme id (see wall-player-presets). */
+  playerThemeId?: string
 }
 
 export type TextContent = {
@@ -114,6 +133,10 @@ export type CanvasDoc = {
   theme: ThemeId
   /** CSS color, gradient, or image URL — overrides theme page background */
   customPageBackground?: string | null
+  /** Community / AI theme workspace surround */
+  customWorkspaceBackground?: string | null
+  customPageBackgroundSize?: string | null
+  communityThemeId?: string | null
   accent: string
   width: typeof CANVAS_WIDTH
   height: typeof CANVAS_HEIGHT
@@ -206,6 +229,14 @@ export type AudioContent = {
   src: string
   title?: string
   artist?: string
+  cover?: string
+  badge?: string
+}
+
+export type VideoContent = {
+  src: string
+  poster?: string
+  title?: string
 }
 
 export type EmojiContent = {
@@ -217,12 +248,16 @@ export type QrContent = {
 }
 
 export type WidgetContent = {
-  type: 'clock' | 'weather' | 'spotify' | 'github'
+  type: 'clock' | 'weather' | 'spotify' | 'spotify_now' | 'github' | 'github_stats' | 'rss' | 'strava'
   label?: string
   location?: string
   /** IANA timezone for clock widgets (e.g. Europe/London) */
   timezone?: string
   repo?: string
+  username?: string
+  /** RSS/Atom feed URL for live list widgets */
+  feedUrl?: string
+  feedLimit?: number
 }
 
 export function createEmojiElement(x: number, y: number, emoji: string): CanvasElement {
@@ -309,9 +344,13 @@ export function createWidgetElement(
 ): CanvasElement {
   const sizes: Record<WidgetContent['type'], { w: number; h: number }> = {
     clock: { w: 280, h: 140 },
-    weather: { w: 300, h: 160 },
+    weather: { w: 320, h: 200 },
     spotify: { w: 360, h: 200 },
+    spotify_now: { w: 360, h: 200 },
     github: { w: 380, h: 240 },
+    github_stats: { w: 400, h: 280 },
+    rss: { w: 320, h: 220 },
+    strava: { w: 340, h: 220 },
   }
   const { w, h } = sizes[widget.type]
   return {

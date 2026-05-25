@@ -1,0 +1,52 @@
+{
+  "themes": [
+    {
+      "id": "aurora-dream",
+      "file": "aurora-dream.json",
+      "label": "Aurora Dream",
+      "description": "Northern lights over deep navy"
+    },
+    {
+      "id": "paper-zen",
+      "file": "paper-zen.json",
+      "label": "Paper Zen",
+      "description": "Soft washi studio minimal"
+    },
+    {
+      "id": "neon-grid",
+      "file": "neon-grid.json",
+      "label": "Neon Grid",
+      "description": "Cyber grid with lime accent"
+    },
+    {
+      "id": "sunset-studio",
+      "file": "sunset-studio.json",
+      "label": "Sunset Studio",
+      "description": "Warm coral workspace with cream board"
+    },
+    {
+      "id": "midnight-ink",
+      "file": "midnight-ink.json",
+      "label": "Midnight Ink",
+      "description": "Deep ink surround with soft paper board"
+    },
+    {
+      "id": "cobalt-wave",
+      "file": "cobalt-wave.json",
+      "label": "Cobalt Wave",
+      "description": "Electric blue studio with frosted board"
+    },
+    {
+      "id": "matcha-studio",
+      "file": "matcha-studio.json",
+      "label": "Matcha Studio",
+      "description": "Calm green tea workspace"
+    },
+    {
+      "id": "storm-grey",
+      "file": "storm-grey.json",
+      "label": "Storm Grey",
+      "description": "Moody thunder clouds"
+    }
+  ]
+}

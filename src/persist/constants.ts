@@ -8,6 +8,11 @@ export function wallCanvasId(username: string): string {
   return username.toLowerCase().trim()
 }
 
+/** Immutable public snapshot — draft auto-save must not overwrite this. */
+export function publishedWallId(username: string): string {
+  return `published:${wallCanvasId(username)}`
+}
+
 export function shouldPersistDoc(doc: CanvasDoc): boolean {
   return doc.id !== DEMO_CANVAS_ID
 }

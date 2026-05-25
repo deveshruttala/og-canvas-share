@@ -1,3 +1,6 @@
+import { fetchOEmbed } from '@/lib/oembed'
+import { isDirectImageUrl, normalizeWallUrl } from '@/lib/normalize-wall-url'
+
 export type LinkMeta = {
   title?: string
   description?: string
@@ -14,9 +17,8 @@ function fallbackTitle(url: string): string {
   }
 }
 
-export async function fetchLinkMeta(url: string): Promise<LinkMeta> {
-  const fallback: LinkMeta = { title: fallbackTitle(url) }
-
+/** Microlink — long-tail OG only when oEmbed did not apply. */
+async function fetchMicrolinkMeta(url: string, fallback: LinkMeta): Promise<LinkMeta> {
   try {
     const endpoint = `/microlink-api/?url=${encodeURIComponent(url)}`
     const res = await fetch(endpoint)
@@ -32,4 +34,28 @@ export async function fetchLinkMeta(url: string): Promise<LinkMeta> {
   } catch {
     return fallback
   }
+}
+
+export async function fetchLinkMeta(url: string): Promise<LinkMeta> {
+  const normalized = normalizeWallUrl(url)
+  const fallback: LinkMeta = { title: fallbackTitle(normalized) }
+
+  if (isDirectImageUrl(normalized)) {
+    return {
+      title: fallback.title,
+      description: 'Image',
+      image: normalized,
+    }
+  }
+
+  const oembed = await fetchOEmbed(normalized)
+  if (oembed?.title || oembed?.thumbnail) {
+    return {
+      title: oembed.title ?? fallback.title,
+      description: oembed.author,
+      image: oembed.thumbnail,
+    }
+  }
+
+  return fetchMicrolinkMeta(normalized, fallback)
 }

@@ -24,6 +24,7 @@ import { getWallEditor, onZoomChange, ZOOM_STEPS } from '@/editor/wall-editor-ap
 import { useWallHistory } from '@/editor/useWallHistory'
 import { blobToDataUrl, compressImage } from '@/lib/compress-image'
 import toast from 'react-hot-toast'
+import { useOmniStore } from '@/store/omni.store'
 
 function Divider() {
   return <span className="mx-1 h-8 w-px shrink-0 bg-neutral-800" />
@@ -90,9 +91,11 @@ export function Dock() {
   }
 
   const pickEmbed = () => {
-    const url = window.prompt('Enter embed URL (YouTube, Spotify, etc.)')
-    if (!url) return
-    run(() => wallActions.addEmbed(url))
+    const omni = useOmniStore.getState()
+    omni.setFilter('audio')
+    omni.setQuery('')
+    omni.setOpen(true)
+    void omni.refresh()
   }
 
   const pickQr = () => {

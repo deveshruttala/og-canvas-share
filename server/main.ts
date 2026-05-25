@@ -5,7 +5,16 @@ import { compare, hash } from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts'
 import { create, getNumericDate, verify } from 'https://deno.land/x/djwt@v3.0.2/mod.ts'
 
 import { handleAiChat } from './ai.ts'
-import { proxyAssetUrl, proxyMicrolink, proxyOpenverse, proxyWallAudioSearch, proxyWallImageSearch } from './proxy.ts'
+import { handleGenerateTheme } from './ai-theme.ts'
+import {
+  proxyAssetUrl,
+  proxyMicrolink,
+  proxyOpenverse,
+  proxyWallAudioSearch,
+  proxyWallImageSearch,
+  proxyWallMediaSearch,
+  proxyWallDataApi,
+} from './proxy.ts'
 import { renderResponse } from './render.ts'
 import { buildRssFeed } from './rss.ts'
 import { handlePing, getStatsSummary } from './stats.ts'
@@ -168,9 +177,28 @@ async function handler(req: Request): Promise<Response> {
     return proxyWallImageSearch(imgApi[1], url.search, req, cors)
   }
 
-  const audioApi = path.match(/^\/wall-audio-api\/(pixabay|freesound)$/)
+  const audioApi = path.match(/^\/wall-audio-api\/(pixabay|freesound|jamendo)$/)
   if (req.method === 'GET' && audioApi) {
     return proxyWallAudioSearch(audioApi[1], url.search, req, cors)
+  }
+
+  const mediaApi = path.match(/^\/wall-media-api\/(coverr|pexels-videos)$/)
+  if (req.method === 'GET' && mediaApi) {
+    return proxyWallMediaSearch(mediaApi[1], url.search, req, cors)
+  }
+
+  const dataApi = path.match(/^\/wall-data-api\/(spotify|strava)\/(.+)$/)
+  if (req.method === 'GET' && dataApi) {
+    return proxyWallDataApi(dataApi[1], dataApi[2], url.search, req, cors)
+  }
+
+  if (req.method === 'POST' && path === '/ai/generate-theme') {
+    const user = await userFromRequest(req)
+    if (!user) return bad('Sign in to generate themes', 401)
+    const body = await req.json()
+    const result = await handleGenerateTheme(body)
+    if (result.error) return bad(result.error, result.status ?? 500)
+    return json(result.data)
   }
 
   if (req.method === 'GET' && path.startsWith('/microlink-api')) {

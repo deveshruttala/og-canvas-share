@@ -23,6 +23,9 @@ const WidgetEditPage = lazy(() => import('@/app/WidgetEditPage').then((m) => ({ 
 const ProtocolDocsPage = lazy(() =>
   import('@/app/ProtocolDocsPage').then((m) => ({ default: m.ProtocolDocsPage })),
 )
+const SpotifyCallback = lazy(() =>
+  import('@/app/SpotifyCallback').then((m) => ({ default: m.default })),
+)
 
 function Lazy({ children }: { children: ReactNode }) {
   return <Suspense fallback={<PageLoader />}>{children}</Suspense>
@@ -43,6 +46,7 @@ export function AppRoutes() {
         <Route path="/w/:widgetId/embed" element={<Lazy><WidgetEmbedPage /></Lazy>} />
         <Route path="/w/:widgetId/edit" element={<Lazy><WidgetEditPage /></Lazy>} />
         <Route path="/docs/protocol" element={<Lazy><ProtocolDocsPage /></Lazy>} />
+        <Route path="/oauth/spotify/callback" element={<Lazy><SpotifyCallback /></Lazy>} />
       </Routes>
     </BrowserRouter>
   )

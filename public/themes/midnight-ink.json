@@ -1,0 +1,10 @@
+{
+  "id": "midnight-ink",
+  "label": "Midnight Ink",
+  "description": "Deep ink workspace with soft paper board",
+  "category": "community",
+  "workspaceBackground": "linear-gradient(160deg, #0c0a09 0%, #1c1917 50%, #312e81 100%)",
+  "pageBackground": "linear-gradient(180deg, #fafaf9 0%, #e7e5e4 100%)",
+  "defaultAccent": "#6366f1",
+  "canvasClass": "shadow-wall-lg border border-neutral-700/40"
+}

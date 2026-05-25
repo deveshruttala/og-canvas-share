@@ -13,7 +13,13 @@ export type CatalogWidgetTemplate =
   | 'clock'
   | 'weather'
   | 'spotify'
+  | 'spotify_now'
   | 'github'
+  | 'github_stats'
+  | 'rss'
+  | 'strava'
+  | 'poll'
+  | 'map'
   | 'progress'
   | 'soundpad'
   | 'qr'
@@ -379,7 +385,28 @@ export const WIDGET_CATALOG: CatalogWidget[] = [
     config: { label: 'Epic Ambient Soundscapes' },
   },
 
+  {
+    id: 'spotify-now-playing',
+    name: 'Spotify Now Playing',
+    category: 'music',
+    description: 'Live track from your Spotify account (OAuth).',
+    tags: ['spotify', 'now playing', 'oauth', 'music'],
+    icon: '🎧',
+    template: 'spotify_now',
+    config: { label: 'Now playing' },
+  },
+
   // ── GitHub (10) ──────────────────────────────────────────────────────────
+  {
+    id: 'github-stats-octocat',
+    name: 'GitHub Stats',
+    category: 'coding',
+    description: 'Live profile stats + contribution chart (public API).',
+    tags: ['github', 'stats', 'contributions', 'developer'],
+    icon: '📊',
+    template: 'github_stats',
+    config: { username: 'octocat', label: 'GitHub' },
+  },
   {
     id: 'github-profile',
     name: 'GitHub Profile',
@@ -479,6 +506,121 @@ export const WIDGET_CATALOG: CatalogWidget[] = [
     icon: '🔥',
     template: 'github',
     config: { repo: 'user/repo', label: 'Contribution Streak' },
+  },
+
+  // ── Live RSS feeds (no key) ───────────────────────────────────────────────
+  {
+    id: 'rss-github-activity',
+    name: 'GitHub Activity',
+    category: 'coding',
+    description: 'Recent public events from a GitHub user (Atom feed).',
+    tags: ['github', 'rss', 'activity', 'developer'],
+    icon: '🐙',
+    template: 'rss',
+    config: {
+      label: 'GitHub',
+      feedUrl: 'https://github.com/octocat.atom',
+      feedLimit: 5,
+    },
+  },
+  {
+    id: 'rss-letterboxd',
+    name: 'Letterboxd Films',
+    category: 'information',
+    description: 'Recently watched films from Letterboxd RSS.',
+    tags: ['letterboxd', 'films', 'rss', 'movies'],
+    icon: '🎬',
+    template: 'rss',
+    config: {
+      label: 'Letterboxd',
+      feedUrl: 'https://letterboxd.com/letterboxd/rss/',
+      feedLimit: 5,
+    },
+  },
+  {
+    id: 'rss-devto',
+    name: 'dev.to Articles',
+    category: 'coding',
+    description: 'Latest articles from a dev.to profile.',
+    tags: ['devto', 'blog', 'rss', 'developer'],
+    icon: '✍️',
+    template: 'rss',
+    config: {
+      label: 'dev.to',
+      feedUrl: 'https://dev.to/feed/ben',
+      feedLimit: 5,
+    },
+  },
+  {
+    id: 'rss-mastodon',
+    name: 'Mastodon Posts',
+    category: 'links',
+    description: 'Recent posts from a Mastodon profile RSS.',
+    tags: ['mastodon', 'social', 'rss', 'fediverse'],
+    icon: '🐘',
+    template: 'rss',
+    config: {
+      label: 'Mastodon',
+      feedUrl: 'https://mastodon.social/@mastodon.rss',
+      feedLimit: 4,
+    },
+  },
+  {
+    id: 'rss-youtube-channel',
+    name: 'YouTube Channel',
+    category: 'links',
+    description: 'Latest uploads from a YouTube channel feed.',
+    tags: ['youtube', 'video', 'rss', 'channel'],
+    icon: '▶️',
+    template: 'rss',
+    config: {
+      label: 'YouTube',
+      feedUrl:
+        'https://www.youtube.com/feeds/videos.xml?channel_id=UC_x5XG1OV2P6uZZ5fsM69wQ',
+      feedLimit: 4,
+    },
+  },
+  {
+    id: 'rss-goodreads',
+    name: 'Goodreads Shelf',
+    category: 'information',
+    description: 'Currently-reading shelf via Goodreads RSS (replace user ID).',
+    tags: ['goodreads', 'books', 'rss', 'reading'],
+    icon: '📚',
+    template: 'rss',
+    config: {
+      label: 'Goodreads',
+      feedUrl: 'https://www.goodreads.com/review/list_rss/1?shelf=currently-reading',
+      feedLimit: 5,
+    },
+  },
+
+  {
+    id: 'poll-quick',
+    name: 'Quick Poll',
+    category: 'fun',
+    description: 'Ask visitors a question — emoji votes, one per session.',
+    tags: ['poll', 'vote', 'emoji', 'interactive'],
+    icon: '🗳️',
+    template: 'poll',
+    config: {
+      question: 'How is this wall?',
+      options: JSON.stringify([
+        { id: 'love', emoji: '🔥', label: 'Love it' },
+        { id: 'ok', emoji: '👍', label: 'Good' },
+        { id: 'wow', emoji: '🤯', label: 'Wow' },
+      ]),
+    },
+  },
+  {
+    id: 'strava-recent',
+    name: 'Strava Activities',
+    category: 'health',
+    description: 'Recent workouts via Strava API token.',
+    tags: ['strava', 'fitness', 'running', 'cycling'],
+    icon: '🏃',
+    template: 'strava',
+    config: { label: 'Recent activities' },
   },
 
   // ── Progress trackers (12) ─────────────────────────────────────────────────

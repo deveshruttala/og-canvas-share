@@ -1,0 +1,10 @@
+{
+  "id": "sunset-studio",
+  "label": "Sunset Studio",
+  "description": "Warm coral workspace with cream artboard",
+  "category": "community",
+  "workspaceBackground": "linear-gradient(135deg, #fb923c 0%, #f472b6 45%, #6366f1 100%)",
+  "pageBackground": "linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%)",
+  "defaultAccent": "#ea580c",
+  "canvasClass": "shadow-wall border border-orange-200/50"
+}

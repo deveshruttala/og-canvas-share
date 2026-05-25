@@ -4,6 +4,7 @@
 import { lazy, Suspense, useState } from 'react'
 import { X, Copy, Download, Share2, ExternalLink, RefreshCw } from 'lucide-react'
 import { useCanvasStore } from '@/store/canvas.store'
+import type { CanvasDoc } from '@/types/canvas'
 import { useUiStore } from '@/store/ui.store'
 import { useAuthStore } from '@/store/auth.store'
 import { exportCanvasToPng } from '@/render/exportPng'
@@ -24,7 +25,15 @@ import {
 } from '@/lib/share-urls'
 import { api, isApiConfigured } from '@/lib/api'
 import { isLocalAuth } from '@/lib/auth/config'
-import { canPublishWalls, publishWallLocally, saveWallDraftLocally } from '@/lib/publish-wall'
+import {
+  canPublishWalls,
+  publicWallSlug,
+  publishWallLocally,
+  saveWallDraftLocally,
+  syncPublishedSnapshot,
+} from '@/lib/publish-wall'
+import { prepareDocForShare, resolveWallExportElement } from '@/lib/wall-share-prep'
+import { getWallEditor, zoomToWallPage } from '@/editor/wall-editor-api'
 
 const LinkedInWizard = lazy(() => import('@/ui/LinkedInWizard').then((m) => ({ default: m.LinkedInWizard })))
 
@@ -47,7 +56,7 @@ export function ShareModal() {
 
   if (!open) return null
 
-  const username = user?.username ?? 'local'
+  const username = user ? publicWallSlug(user.username) : 'local'
   const subject = { kind: 'wall' as const, id: username }
   const shareVersion = (doc.meta as { shareVersion?: number }).shareVersion ?? 1
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
@@ -55,13 +64,11 @@ export function ShareModal() {
   const embed = embedUrl(subject, origin)
 
   const bumpVersion = async () => {
+    const fresh = await prepareDocForShare()
     const next = shareVersion + 1
-    useCanvasStore.setState((s) => ({
-      doc: { ...s.doc, meta: { ...s.doc.meta, shareVersion: next } },
-    }))
     const bumped = {
-      ...doc,
-      meta: { ...doc.meta, shareVersion: next, updatedAt: new Date().toISOString() },
+      ...fresh,
+      meta: { ...fresh.meta, shareVersion: next, updatedAt: new Date().toISOString() },
     }
     useCanvasStore.setState({ doc: bumped })
     if (user && isApiConfigured()) {
@@ -72,6 +79,9 @@ export function ShareModal() {
       }
     } else if (user && isLocalAuth()) {
       await saveWallDraftLocally(user.username, bumped)
+      if (bumped.meta.publishedAt) {
+        await syncPublishedSnapshot(user.username, bumped)
+      }
     }
     toast.success(`Version bumped to v${next}`)
   }
@@ -86,18 +96,31 @@ export function ShareModal() {
       return
     }
     try {
-      if (isApiConfigured()) {
-        await api.saveWall(user.username, {
-          ...doc,
-          meta: { ...doc.meta, updatedAt: new Date().toISOString(), publishedAt: new Date().toISOString() },
-        })
-      } else {
-        const published = await publishWallLocally(user.username, doc)
-        useCanvasStore.setState({ doc: published })
+      const fresh = await prepareDocForShare()
+      const now = new Date().toISOString()
+      const toPublish: CanvasDoc = {
+        ...fresh,
+        meta: { ...fresh.meta, updatedAt: now, publishedAt: now },
       }
+      let published: CanvasDoc
+      if (isLocalAuth()) {
+        published = await publishWallLocally(user.username, toPublish)
+      } else {
+        published = toPublish
+      }
+      if (isApiConfigured()) {
+        try {
+          await api.saveWall(publicWallSlug(user.username), published)
+        } catch (apiErr) {
+          if (!isLocalAuth()) throw apiErr
+          console.warn('[publish] API save failed; local snapshot saved', apiErr)
+        }
+      }
+      useCanvasStore.setState({ doc: published })
       toast.success(`Wall published! Open ${publicUrl}`)
-    } catch {
-      toast.error('Publish failed')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Publish failed'
+      toast.error(msg)
     }
   }
 
@@ -106,16 +129,21 @@ export function ShareModal() {
       window.open(url, '_blank')
       return
     }
-    const el = document.querySelector('[data-wall-export]') as HTMLElement | null
+    const editor = getWallEditor()
+    if (editor) zoomToWallPage(editor, { animate: false })
+    await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())))
+
+    const el = resolveWallExportElement()
     if (!el) {
-      toast.error('Canvas not found')
+      toast.error('Canvas not found — open the editor first')
       return
     }
     try {
       await exportCanvasToPng(el, `${doc.title.replace(/\s+/g, '-').toLowerCase() || 'wall'}.png`)
       toast.success('PNG downloaded')
-    } catch {
-      toast.error('Export failed')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Export failed'
+      toast.error(msg)
     }
   }
 

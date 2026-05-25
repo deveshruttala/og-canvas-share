@@ -27,7 +27,9 @@ export type WallTextColor =
   | 'light-violet'
 
 export type WallTextFont = 'sans' | 'draw' | 'serif' | 'mono'
-export type WallTextSize = 's' | 'm' | 'l' | 'xl'
+/** Wall UI sizes — mapped to tldraw s/m/l/xl + optional scale. */
+export type WallTextSize = 'xs' | 's' | 'm' | 'l' | 'xl' | '2xl' | '3xl'
+export type TldrawTextSize = 's' | 'm' | 'l' | 'xl'
 export type WallTextAlign = 'start' | 'middle' | 'end'
 
 export type WallTextBoxStyle = {
@@ -38,6 +40,8 @@ export type WallTextBoxStyle = {
   textAlign: WallTextAlign
   stickyColor: WallStickyColor
   cardBg: string
+  /** Fine size tuning beyond tldraw presets (default 1). */
+  textScale?: number
 }
 
 export const DEFAULT_TEXT_BOX_STYLE: WallTextBoxStyle = {
@@ -92,19 +96,43 @@ export const TEXT_COLOR_OPTIONS: { id: WallTextColor; label: string }[] = [
   { id: 'light-violet', label: 'Lavender' },
 ]
 
-export const FONT_OPTIONS: { id: WallTextFont; label: string; hint: string }[] = [
-  { id: 'sans', label: 'Sans', hint: 'Clean UI' },
-  { id: 'draw', label: 'Hand', hint: 'Sketchy' },
-  { id: 'serif', label: 'Serif', hint: 'Editorial' },
-  { id: 'mono', label: 'Mono', hint: 'Code' },
+export const FONT_OPTIONS: { id: WallTextFont; label: string; hint: string; sample: string }[] = [
+  { id: 'sans', label: 'Sans', hint: 'Inter-style UI', sample: 'Aa' },
+  { id: 'draw', label: 'Hand', hint: 'Sketch marker', sample: 'Aa' },
+  { id: 'serif', label: 'Serif', hint: 'Editorial', sample: 'Aa' },
+  { id: 'mono', label: 'Mono', hint: 'Code & data', sample: 'Aa' },
 ]
 
-export const SIZE_OPTIONS: { id: WallTextSize; label: string; hint: string }[] = [
-  { id: 's', label: 'S', hint: 'Small' },
-  { id: 'm', label: 'M', hint: 'Body' },
-  { id: 'l', label: 'L', hint: 'Large' },
-  { id: 'xl', label: 'XL', hint: 'Headline' },
+export const SIZE_OPTIONS: { id: WallTextSize; label: string; hint: string; px: number }[] = [
+  { id: 'xs', label: 'XS', hint: 'Fine print', px: 12 },
+  { id: 's', label: 'S', hint: 'Caption', px: 14 },
+  { id: 'm', label: 'M', hint: 'Body', px: 18 },
+  { id: 'l', label: 'L', hint: 'Subheading', px: 24 },
+  { id: 'xl', label: 'XL', hint: 'Heading', px: 32 },
+  { id: '2xl', label: '2XL', hint: 'Display', px: 42 },
+  { id: '3xl', label: '3XL', hint: 'Hero', px: 56 },
 ]
+
+/** Maps Wall sizes to tldraw props. */
+export function resolveTextSizeProps(size: WallTextSize): { size: TldrawTextSize; scale: number } {
+  const map: Record<WallTextSize, { size: TldrawTextSize; scale: number }> = {
+    xs: { size: 's', scale: 0.72 },
+    s: { size: 's', scale: 1 },
+    m: { size: 'm', scale: 1 },
+    l: { size: 'l', scale: 1 },
+    xl: { size: 'xl', scale: 1 },
+    '2xl': { size: 'xl', scale: 1.38 },
+    '3xl': { size: 'xl', scale: 1.85 },
+  }
+  return map[size] ?? map.m
+}
+
+export function wallSizeFromShape(size: TldrawTextSize, scale: number): WallTextSize {
+  if (size === 's' && scale < 0.85) return 'xs'
+  if (size === 'xl' && scale >= 1.65) return '3xl'
+  if (size === 'xl' && scale >= 1.2) return '2xl'
+  return size as WallTextSize
+}
 
 export const TEXT_ALIGN_OPTIONS: { id: WallTextAlign; label: string }[] = [
   { id: 'start', label: 'Left' },
@@ -163,9 +191,41 @@ export const TEXT_STYLE_PRESETS: {
   { id: 'link-style', label: 'Link', style: { font: 'sans', size: 'm', color: 'blue', textAlign: 'start' } },
   { id: 'center-hero', label: 'Hero', style: { font: 'sans', size: 'xl', color: 'white', textAlign: 'middle' } },
   { id: 'soft-pink', label: 'Soft', style: { font: 'draw', size: 'm', color: 'light-red', textAlign: 'start' } },
+  { id: 'mega', label: 'Mega', style: { font: 'sans', size: '3xl', color: 'black', textAlign: 'middle' } },
+  { id: 'label', label: 'Label', style: { font: 'sans', size: 'xs', color: 'grey', textAlign: 'start' } },
+  { id: 'display', label: 'Display', style: { font: 'serif', size: '2xl', color: 'black', textAlign: 'start' } },
+  { id: 'marker', label: 'Marker', style: { font: 'draw', size: 'l', color: 'orange', textAlign: 'start' } },
+  { id: 'sky', label: 'Sky', style: { font: 'sans', size: 'm', color: 'light-blue', textAlign: 'middle' } },
+  { id: 'mint', label: 'Mint', style: { font: 'mono', size: 's', color: 'green', textAlign: 'start' } },
+]
+
+export const DISPLAY_MODE_OPTIONS: { id: WallTextDisplayMode; label: string; short: string }[] = [
+  { id: 'plain', label: 'Plain text', short: 'Plain' },
+  { id: 'card', label: 'Card', short: 'Card' },
+  { id: 'sticky', label: 'Sticky note', short: 'Sticky' },
 ]
 
 export function readWallTextBoxStyle(meta: Record<string, unknown> | undefined): WallTextBoxStyle {
   const raw = meta?.wallTextBox as Partial<WallTextBoxStyle> | undefined
-  return { ...DEFAULT_TEXT_BOX_STYLE, ...raw }
+  const merged = { ...DEFAULT_TEXT_BOX_STYLE, ...raw }
+  if (raw?.size && !SIZE_OPTIONS.some((o) => o.id === raw.size)) {
+    merged.size = 'm'
+  }
+  return merged
+}
+
+export function normalizeWallTextStyleFromShape(
+  meta: Record<string, unknown> | undefined,
+  shapeProps?: { size?: string; scale?: number },
+): WallTextBoxStyle {
+  const base = readWallTextBoxStyle(meta)
+  if (shapeProps?.size && ['s', 'm', 'l', 'xl'].includes(shapeProps.size)) {
+    const scale = shapeProps.scale ?? 1
+    return {
+      ...base,
+      size: wallSizeFromShape(shapeProps.size as TldrawTextSize, scale),
+      textScale: scale,
+    }
+  }
+  return base
 }

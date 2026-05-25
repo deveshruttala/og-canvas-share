@@ -8,7 +8,7 @@ import { loadCanvas } from '@/persist/db'
 import { LOCAL_CANVAS_ID } from '@/persist/constants'
 import { api } from '@/lib/api'
 import { isLocalAuth } from '@/lib/auth/config'
-import { loadPublishedWall } from '@/lib/publish-wall'
+import { loadPublishedWall, publicWallSlug } from '@/lib/publish-wall'
 import { recordPing } from '@/lib/stats-client'
 import '@/styles/public-viewer.css'
 
@@ -19,7 +19,7 @@ export function PublicViewer() {
 
   useEffect(() => {
     void (async () => {
-      const name = username ?? ''
+      const name = publicWallSlug(username ?? '')
 
       if (isLocalAuth()) {
         const published = await loadPublishedWall(name)

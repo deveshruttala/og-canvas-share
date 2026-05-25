@@ -1,24 +1,39 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, ImageIcon, Palette, X } from 'lucide-react'
+import { Check, ImageIcon, Palette, Sparkles, Upload, X } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { useCanvasStore } from '@/store/canvas.store'
 import { THEME_CATEGORIES, getTheme, themeList, type ThemeId } from '@/themes'
-import { normalizePageBackgroundInput } from '@/editor/wall-page-background'
+import { loadCommunityThemes, type CommunityThemeJson } from '@/themes/community-theme'
+import {
+  normalizePageBackgroundInput,
+  pageBackgroundFromFile,
+  resolvePageBackgroundStyle,
+} from '@/editor/wall-page-background'
+import { loadAiConfig } from '@/lib/ai-config'
+import { generateThemeWithAi } from '@/lib/ai-theme'
 import { cn } from '@/lib/cn'
 
 export function ThemePicker() {
   const themeId = useCanvasStore((s) => s.doc.theme)
   const customPageBackground = useCanvasStore((s) => s.doc.customPageBackground)
+  const customPageBackgroundSize = useCanvasStore((s) => s.doc.customPageBackgroundSize)
   const setTheme = useCanvasStore((s) => s.setTheme)
   const setPageBackground = useCanvasStore((s) => s.setPageBackground)
+  const applyCommunityTheme = useCanvasStore((s) => s.applyCommunityTheme)
   const [open, setOpen] = useState(false)
   const [customOpen, setCustomOpen] = useState(false)
-  const [customDraft, setCustomDraft] = useState(customPageBackground ?? '')
+  const [uploading, setUploading] = useState(false)
+  const [community, setCommunity] = useState<CommunityThemeJson[]>([])
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiBusy, setAiBusy] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
   const current = getTheme(themeId)
 
   useEffect(() => {
-    setCustomDraft(customPageBackground ?? '')
-  }, [customPageBackground])
+    if (!open) return
+    void loadCommunityThemes().then(setCommunity)
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -41,25 +56,82 @@ export function ThemePicker() {
     setOpen(false)
   }
 
-  const applyCustom = () => {
-    setPageBackground(normalizePageBackgroundInput(customDraft))
+  const applySolidColor = (hex: string) => {
+    setPageBackground(hex, null)
     setCustomOpen(false)
+    toast.success('Page color applied')
   }
 
   const clearCustom = () => {
-    setCustomDraft('')
-    setPageBackground(null)
+    setPageBackground(null, null)
+    toast.success('Custom background cleared')
   }
 
-  const pagePreviewStyle = customPageBackground?.trim()
-    ? { background: customPageBackground }
-    : {
-        background: current.pageBackground,
-        backgroundSize: current.pageBackgroundSize,
-      }
+  const onUpload = async (file: File | undefined) => {
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast.error('Choose an image file (JPG, PNG, WebP…)')
+      return
+    }
+    setUploading(true)
+    try {
+      const { background, size } = await pageBackgroundFromFile(file)
+      setPageBackground(background, size)
+      setCustomOpen(false)
+      toast.success('Background image applied')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  const applyCommunity = (t: CommunityThemeJson) => {
+    applyCommunityTheme({
+      id: t.id,
+      workspaceBackground: t.workspaceBackground,
+      pageBackground: t.pageBackground,
+      pageBackgroundSize: t.pageBackgroundSize,
+      defaultAccent: t.defaultAccent,
+    })
+    setOpen(false)
+    toast.success(`Applied ${t.label}`)
+  }
+
+  const runAiTheme = async () => {
+    const config = loadAiConfig()
+    if (!config?.apiKey) {
+      toast.error('Add an OpenAI key in Wall Agent settings first')
+      return
+    }
+    setAiBusy(true)
+    try {
+      const theme = await generateThemeWithAi(aiPrompt || 'cozy dark developer wall', config)
+      applyCommunity(theme)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Theme generation failed')
+    } finally {
+      setAiBusy(false)
+    }
+  }
+
+  const pagePreviewStyle = resolvePageBackgroundStyle(
+    customPageBackground,
+    customPageBackgroundSize,
+    current,
+  )
 
   return (
     <div ref={rootRef} className="relative">
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => void onUpload(e.target.files?.[0])}
+      />
+
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -138,6 +210,52 @@ export function ThemePicker() {
             })}
           </div>
 
+          {community.length > 0 && (
+            <div className="mt-3 border-t border-neutral-800 pt-3">
+              <p className="mb-2 px-1 text-[9px] font-bold uppercase tracking-wider text-neutral-600">
+                Community themes (/public/themes)
+              </p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {community.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => applyCommunity(t)}
+                    className="wall-theme-option rounded-xl border border-neutral-800 bg-neutral-900/80 p-2 text-left hover:border-neutral-600"
+                  >
+                    <span
+                      className="mb-1 block h-8 w-full rounded-md border border-white/10"
+                      style={{ background: t.pageBackground, backgroundSize: t.pageBackgroundSize }}
+                    />
+                    <span className="text-[11px] font-bold text-white">{t.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-3 border-t border-neutral-800 pt-3">
+            <p className="mb-2 flex items-center gap-1 px-1 text-[9px] font-bold uppercase tracking-wider text-neutral-600">
+              <Sparkles className="h-3 w-3 text-[#beee1d]" />
+              AI theme generator
+            </p>
+            <input
+              type="text"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder="e.g. warm espresso notebook with gold accent"
+              className="mb-2 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-2.5 py-2 text-xs text-white outline-none focus:border-[#beee1d]"
+            />
+            <button
+              type="button"
+              disabled={aiBusy}
+              onClick={() => void runAiTheme()}
+              className="w-full rounded-lg bg-[#beee1d]/90 py-2 text-xs font-bold text-black disabled:opacity-50"
+            >
+              {aiBusy ? 'Generating…' : 'Generate & apply'}
+            </button>
+          </div>
+
           <div className="mt-3 border-t border-neutral-800 pt-3">
             <button
               type="button"
@@ -153,38 +271,50 @@ export function ThemePicker() {
 
             {customOpen && (
               <div className="mt-2 space-y-2">
-                <input
-                  type="text"
-                  value={customDraft}
-                  onChange={(e) => setCustomDraft(e.target.value)}
-                  placeholder="#hex, linear-gradient(...), or image URL"
-                  className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-2.5 py-2 text-xs text-white outline-none focus:border-[#beee1d]"
-                />
+                <button
+                  type="button"
+                  disabled={uploading}
+                  onClick={() => fileRef.current?.click()}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-[#beee1d]/40 bg-[#beee1d]/5 px-3 py-3 text-xs font-bold text-[#beee1d] hover:bg-[#beee1d]/10 disabled:opacity-50"
+                >
+                  <Upload className="h-4 w-4" />
+                  {uploading ? 'Processing…' : 'Upload image'}
+                </button>
+                <p className="text-[9px] text-neutral-600">
+                  JPG, PNG, or WebP — saved in your wall (no URL needed).
+                </p>
+
+                {customPageBackground && (
+                  <div
+                    className="h-14 w-full rounded-lg border border-white/10"
+                    style={resolvePageBackgroundStyle(
+                      customPageBackground,
+                      customPageBackgroundSize,
+                      current,
+                    )}
+                  />
+                )}
+
+                <label className="block text-[9px] font-bold uppercase tracking-wider text-neutral-600">
+                  Solid color
+                </label>
                 <input
                   type="color"
                   className="h-9 w-full cursor-pointer rounded-lg border border-neutral-700 bg-neutral-900"
-                  onChange={(e) => setCustomDraft(e.target.value)}
+                  onChange={(e) => applySolidColor(normalizePageBackgroundInput(e.target.value) ?? e.target.value)}
                   aria-label="Pick a solid page color"
                 />
-                <div className="flex gap-2">
+
+                {customPageBackground && (
                   <button
                     type="button"
-                    onClick={applyCustom}
-                    className="flex-1 rounded-lg bg-[#beee1d] px-3 py-1.5 text-xs font-bold text-black"
+                    onClick={clearCustom}
+                    className="flex w-full items-center justify-center gap-1 rounded-lg border border-neutral-700 px-2 py-1.5 text-xs text-neutral-400 hover:text-white"
                   >
-                    Apply
+                    <X className="h-3.5 w-3.5" />
+                    Clear custom background
                   </button>
-                  {customPageBackground && (
-                    <button
-                      type="button"
-                      onClick={clearCustom}
-                      className="rounded-lg border border-neutral-700 px-2 py-1.5 text-neutral-400 hover:text-white"
-                      title="Clear custom background"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
+                )}
               </div>
             )}
           </div>

@@ -1,40 +1,22 @@
-import { detectLinkPlatform, getEmbedUrl } from '@/lib/link-resolver'
-import { fetchLinkMeta } from '@/lib/extract-link-meta'
 import { compressImage, blobToDataUrl } from '@/lib/compress-image'
 import type { CanvasElement } from '@/types/canvas'
 import { createEmbedElement } from '@/types/canvas'
+import { detectLinkPlatform, getEmbedUrl } from '@/lib/link-resolver'
+import { fetchLinkMeta } from '@/lib/extract-link-meta'
+import { readClipboardSlice, routeClipboard } from '@/paste/router'
+import { executePasteRoute } from '@/paste/execute'
 
-import { wallActions } from '@/editor/wall-actions'
-
-/** Universal paste for tldraw editor */
+/** Universal paste for tldraw editor — routes through paste/router. */
 export async function handleTldrawPaste(e: ClipboardEvent): Promise<boolean> {
-  const items = e.clipboardData?.items
-  if (items) {
-    for (const item of items) {
-      if (item.type.startsWith('image/')) {
-        const file = item.getAsFile()
-        if (!file) continue
-        try {
-          await wallActions.pasteImageFile(file)
-          return true
-        } catch {
-          /* try text fallback */
-        }
-      }
-    }
-  }
-
-  const text = e.clipboardData?.getData('text/plain')?.trim()
-  if (!text) return false
-
-  const urlMatch = text.match(/^https?:\/\/\S+/i)
-  if (urlMatch) {
-    await wallActions.pasteUrl(urlMatch[0])
+  const slice = readClipboardSlice(e.clipboardData)
+  const route = routeClipboard(slice)
+  if (!route) return false
+  try {
+    await executePasteRoute(route)
     return true
+  } catch {
+    return false
   }
-
-  await wallActions.pasteText(text)
-  return true
 }
 
 export type PasteHandlers = {
@@ -73,27 +55,42 @@ export async function handleWallPaste(
     }
   }
 
-  const text = e.clipboardData?.getData('text/plain')?.trim()
-  if (!text) return false
+  const slice = readClipboardSlice(e.clipboardData)
+  const route = routeClipboard(slice)
+  if (!route) return false
 
-  const urlMatch = text.match(/^https?:\/\/\S+/i)
-  if (urlMatch) {
-    const url = urlMatch[0]
+  if (route.kind === 'image-file') {
+    try {
+      const blob = await compressImage(route.file)
+      const src = await blobToDataUrl(blob)
+      handlers.addImageAt(center.x - 140, center.y - 100, src, route.file.name)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  if (route.kind === 'link' || route.kind === 'embed') {
+    const url = route.url
     const platform = detectLinkPlatform(url)
     const embedUrl = getEmbedUrl(url, platform)
-
-    if (embedUrl && ['youtube', 'spotify', 'vimeo', 'soundcloud'].includes(platform)) {
-      handlers.addElement(
-        createEmbedElement(center.x - 200, center.y - 120, url, embedUrl, platform),
-      )
-      return true
+    if (route.kind === 'embed' || embedUrl) {
+      const eu = embedUrl ?? url
+      if (eu) {
+        handlers.addElement(createEmbedElement(center.x - 200, center.y - 120, url, eu, platform))
+        return true
+      }
     }
-
     const meta = await fetchLinkMeta(url)
     handlers.addLinkAt(center.x - 150, center.y - 60, url, meta)
     return true
   }
 
-  handlers.addTextAt(center.x - 110, center.y - 80, text)
-  return true
+  if (route.kind === 'sticky' || route.kind === 'html') {
+    const text = route.kind === 'html' ? route.plain : route.text
+    handlers.addTextAt(center.x - 110, center.y - 80, text)
+    return true
+  }
+
+  return false
 }

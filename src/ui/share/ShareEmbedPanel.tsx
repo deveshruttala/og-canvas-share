@@ -10,10 +10,14 @@ export function ShareEmbedPanel({ subject }: { subject: ShareSubject }) {
   const snippets = buildEmbedSnippets(subject)
 
   const copy = async (id: string, code: string) => {
-    await navigator.clipboard.writeText(code)
-    setCopied(id)
-    toast.success('Copied')
-    setTimeout(() => setCopied(null), 2000)
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopied(id)
+      toast.success('Copied')
+      setTimeout(() => setCopied(null), 2000)
+    } catch {
+      toast.error('Could not copy — allow clipboard access')
+    }
   }
 
   return (

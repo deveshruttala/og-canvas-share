@@ -2,6 +2,7 @@ import { createShapeId, toRichText, type Editor } from 'tldraw'
 import type { TLNoteShape, TLTextShape } from '@tldraw/tlschema'
 import {
   DEFAULT_TEXT_BOX_STYLE,
+  resolveTextSizeProps,
   type WallStickyColor,
   type WallTextBoxStyle,
   type WallTextAlign,
@@ -31,6 +32,7 @@ export function createTextBoxShape(
   },
 ) {
   const style = { ...DEFAULT_TEXT_BOX_STYLE, ...opts.style }
+  const { size: tldSize, scale } = resolveTextSizeProps(style.size)
   const id = opts.id ?? createShapeId()
   editor.createShape({
     id,
@@ -41,14 +43,14 @@ export function createTextBoxShape(
     props: {
       richText: toRichText(opts.text ?? 'Type here'),
       color: style.color,
-      size: style.size,
+      size: tldSize,
       font: style.font,
       textAlign: style.textAlign === 'middle' ? 'middle' : style.textAlign,
       autoSize: true,
       w: 320,
-      scale: 1,
+      scale,
     },
-    meta: toJsonMeta({ wallTextBox: style }),
+    meta: toJsonMeta({ wallTextBox: { ...style, textScale: scale } }),
   })
   return id
 }
@@ -108,14 +110,21 @@ export function applyTextBoxStyleToShape(
 
   if (shape.type === 'text') {
     const props = shape.props as TLTextShape['props']
+    const sizeResolved = stylePatch.size ? resolveTextSizeProps(stylePatch.size) : null
     editor.updateShape({
       id: shape.id,
       type: 'text',
-      meta: toJsonMeta({ ...(shape.meta as Record<string, unknown>), wallTextBox }),
+      meta: toJsonMeta({
+        ...(shape.meta as Record<string, unknown>),
+        wallTextBox: {
+          ...wallTextBox,
+          ...(sizeResolved ? { textScale: sizeResolved.scale } : {}),
+        },
+      }),
       props: {
         ...props,
         ...(stylePatch.color ? { color: stylePatch.color } : {}),
-        ...(stylePatch.size ? { size: stylePatch.size } : {}),
+        ...(sizeResolved ? { size: sizeResolved.size, scale: sizeResolved.scale } : {}),
         ...(stylePatch.font ? { font: stylePatch.font } : {}),
         ...(stylePatch.textAlign
           ? { textAlign: stylePatch.textAlign === 'middle' ? 'middle' : stylePatch.textAlign }
@@ -128,13 +137,21 @@ export function applyTextBoxStyleToShape(
 
   if (shape.type === 'note') {
     const props = shape.props as TLNoteShape['props']
+    const sizeResolved = stylePatch.size ? resolveTextSizeProps(stylePatch.size) : null
     editor.updateShape({
       id: shape.id,
       type: 'note',
-      meta: toJsonMeta({ ...(shape.meta as Record<string, unknown>), wallTextBox }),
+      meta: toJsonMeta({
+        ...(shape.meta as Record<string, unknown>),
+        wallTextBox: {
+          ...wallTextBox,
+          ...(sizeResolved ? { textScale: sizeResolved.scale } : {}),
+        },
+      }),
       props: {
         ...props,
         ...(stylePatch.stickyColor ? { color: stylePatch.stickyColor } : {}),
+        ...(sizeResolved ? { size: sizeResolved.size, scale: sizeResolved.scale } : {}),
         ...(stylePatch.font ? { font: stylePatch.font } : {}),
         ...(stylePatch.textAlign ? { align: stylePatch.textAlign } : {}),
         ...(richText ? { richText } : {}),

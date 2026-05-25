@@ -2,9 +2,10 @@ import type { ProviderResult } from '@/providers/types'
 import type { OmniItem } from '@/providers/types'
 import { hasKey } from '@/lib/provider-config'
 import { searchWikimediaImages } from '@/providers/image-sources/wikimedia'
-import { searchPixabayImages } from '@/providers/image-sources/pixabay'
 import { searchPexelsImages } from '@/providers/image-sources/pexels'
 import { searchUnsplashImages } from '@/providers/image-sources/unsplash'
+import { searchPixabayImages } from '@/providers/image-sources/pixabay'
+import { searchOpenverseImages } from '@/providers/image-sources/openverse'
 import { searchMetMuseumImages } from '@/providers/image-sources/metmuseum'
 import { searchArticImages } from '@/providers/image-sources/artic'
 import { picsumFallbackImages } from '@/providers/image-sources/picsum'
@@ -19,42 +20,63 @@ function dedupeItems(items: OmniItem[]): OmniItem[] {
   })
 }
 
+/** Prefer stock/CC photo APIs; museum catalogs fuzzy-match common words (e.g. "train"). */
+function prefersMuseumCatalog(q: string): boolean {
+  const lower = q.toLowerCase().trim()
+  if (lower.length < 2) return false
+  return /\b(painting|portrait|museum|artwork|renaissance|classical|baroque|sculpture|artist|oil on|watercolor|fresco|century|masterpiece|gallery|van gogh|monet|picasso)\b/i.test(
+    lower,
+  )
+}
+
 export async function searchImages(query: string, browse = false): Promise<ProviderResult | null> {
   const raw = query.trim()
   if (raw.length < 2 && !browse) return null
   const q = raw.length < 2 ? 'landscape nature' : raw
+  const museumMode = prefersMuseumCatalog(q)
 
-  const [wiki, met, artic, pixabay, pexels, unsplash] = await Promise.all([
-    searchWikimediaImages(q, 16),
-    searchMetMuseumImages(q, 8),
-    searchArticImages(q, 8),
+  const [openverse, pixabay, pexels, unsplash, wiki, met, artic] = await Promise.all([
+    searchOpenverseImages(q, 28),
     searchPixabayImages(q, 20),
-    searchPexelsImages(q, 16),
+    searchPexelsImages(q, 20),
     searchUnsplashImages(q, 12),
+    searchWikimediaImages(q, museumMode ? 16 : 10),
+    museumMode ? searchMetMuseumImages(q, 8) : Promise.resolve({ items: [], source: 'Met Museum' }),
+    museumMode ? searchArticImages(q, 8) : Promise.resolve({ items: [], source: 'Art Institute' }),
   ])
 
-  let merged = dedupeItems([
+  const stock = dedupeItems([
+    ...openverse.items,
     ...pixabay.items,
     ...pexels.items,
     ...unsplash.items,
-    ...met.items,
-    ...artic.items,
-    ...wiki.items,
   ])
 
+  const museumCap = museumMode ? 16 : stock.length >= 8 ? 0 : 4
+  const museum = museumCap
+    ? dedupeItems([
+        ...(museumMode ? met.items : met.items.slice(0, 2)),
+        ...(museumMode ? artic.items : artic.items.slice(0, 2)),
+        ...wiki.items,
+      ]).slice(0, museumCap)
+    : dedupeItems([...wiki.items]).slice(0, 6)
+
+  let merged = dedupeItems([...stock, ...museum])
+
   const sources: string[] = []
+  if (openverse.items.length) sources.push('Openverse')
   if (pixabay.items.length) sources.push('Pixabay')
   if (pexels.items.length) sources.push('Pexels')
   if (unsplash.items.length) sources.push('Unsplash')
-  if (met.items.length) sources.push('Met Museum')
-  if (artic.items.length) sources.push('Art Institute')
-  if (wiki.items.length) sources.push('Wikimedia')
+  if (wiki.items.length && museum.length) sources.push('Wikimedia')
+  if (met.items.length && museumMode) sources.push('Met Museum')
+  if (artic.items.length && museumMode) sources.push('Art Institute')
 
   const hints: string[] = []
+  if (openverse.error && !openverse.items.length) hints.push(openverse.error)
   if (pixabay.error && hasKey('pixabay')) hints.push(pixabay.error)
   if (pexels.error && hasKey('pexels')) hints.push(pexels.error)
   if (unsplash.error && hasKey('unsplash')) hints.push(unsplash.error)
-  if (wiki.error && !wiki.items.length) hints.push(wiki.error)
 
   let fallbackNote: string | undefined
   if (merged.length === 0) {
@@ -65,7 +87,7 @@ export async function searchImages(query: string, browse = false): Promise<Provi
   }
 
   const needsKey =
-    !hasKey('pixabay') && !hasKey('pexels') && !hasKey('unsplash') && merged.length < 12
+    !hasKey('pexels') && !hasKey('unsplash') && !hasKey('pixabay') && openverse.items.length < 8
       ? 'pixabay'
       : undefined
 
@@ -74,8 +96,17 @@ export async function searchImages(query: string, browse = false): Promise<Provi
     errorParts.push(fallbackNote)
   } else {
     if (hints.length && merged.length < 8) errorParts.push(hints.join(' · '))
-    if (!hasKey('pixabay') && !hasKey('pexels') && (met.items.length || wiki.items.length)) {
-      errorParts.push('Met + Wikimedia work without keys. Add Pixabay/Pexels for more stock photos.')
+    if (!museumMode && (met.items.length || artic.items.length) && stock.length >= 8) {
+      /* museums skipped intentionally */
+    } else if (
+      !hasKey('pexels') &&
+      !hasKey('unsplash') &&
+      !hasKey('pixabay') &&
+      openverse.items.length >= 8
+    ) {
+      errorParts.push('Stock photos via Openverse (free). Add Pixabay/Pexels keys in Connections for more.')
+    } else if (!hasKey('pexels') && !hasKey('unsplash') && !hasKey('pixabay') && stock.length < 8) {
+      errorParts.push('Add a free Pixabay or Pexels key in Connections for more stock photos.')
     }
   }
 

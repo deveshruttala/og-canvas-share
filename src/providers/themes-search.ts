@@ -1,5 +1,6 @@
 import type { OmniItem, ProviderResult } from '@/providers/types'
 import { themes, THEME_CATEGORIES } from '@/themes'
+import { loadCommunityThemes } from '@/themes/community-theme'
 import type { ThemeId } from '@/types/canvas'
 import { useCanvasStore } from '@/store/canvas.store'
 
@@ -43,6 +44,15 @@ export async function searchThemes(query: string, browse = false): Promise<Provi
     if (filtered.length === 0) filtered = all
   }
 
+  const community = await loadCommunityThemes()
+  const communityFiltered =
+    browse || !q
+      ? community
+      : community.filter((t) => {
+          const hay = `${t.label} ${t.id} ${t.description ?? ''}`.toLowerCase()
+          return q.split(/\s+/).filter(Boolean).some((tok) => hay.includes(tok))
+        })
+
   const items: OmniItem[] = filtered.map((t) => ({
     id: `theme-${t.id}`,
     kind: 'action' as const,
@@ -55,13 +65,34 @@ export async function searchThemes(query: string, browse = false): Promise<Provi
     },
   }))
 
+  const communityItems: OmniItem[] = communityFiltered.map((t) => ({
+    id: `theme-community-${t.id}`,
+    kind: 'action' as const,
+    title: t.label,
+    subtitle: t.description ?? 'Community JSON theme',
+    icon: '🌐',
+    source: 'Community',
+    payload: {
+      run: () =>
+        useCanvasStore.getState().applyCommunityTheme({
+          id: t.id,
+          workspaceBackground: t.workspaceBackground,
+          pageBackground: t.pageBackground,
+          pageBackgroundSize: t.pageBackgroundSize,
+          defaultAccent: t.defaultAccent,
+        }),
+    },
+  }))
+
+  const merged = [...communityItems, ...items]
+
   return {
     section: {
       id: 'themes',
       title: 'Canvas themes',
-      source: `${all.length} themes`,
-      items: items.slice(0, 40),
-      more: items.length > 40,
+      source: `${all.length} built-in · ${community.length} community`,
+      items: merged.slice(0, 40),
+      more: merged.length > 40,
     },
   }
 }

@@ -13,7 +13,7 @@ async function readBody(res: ServerResponse, status: number, body: string, conte
 function audioSearchProxyMiddleware(): Connect.NextHandleFunction {
   return (req: IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
     const raw = req.url ?? ''
-    const match = raw.match(/^\/wall-audio-api\/(pixabay|freesound)(\?.*)?$/)
+    const match = raw.match(/^\/wall-audio-api\/(pixabay|freesound|jamendo)(\?.*)?$/)
     if (!match) return next()
 
     const provider = match[1]
@@ -56,6 +56,20 @@ function audioSearchProxyMiddleware(): Connect.NextHandleFunction {
           target.searchParams.set('filter', 'license:"Creative Commons 0"')
           target.searchParams.set('token', token)
           target.searchParams.set('page_size', pageSize)
+          const upstream = await fetch(target.toString(), { headers: JSON_HEADERS })
+          const text = await upstream.text()
+          await readBody(res, upstream.status, text)
+          return
+        }
+
+        if (provider === 'jamendo') {
+          const clientId = parsed.searchParams.get('client_id')
+          if (!clientId) {
+            await readBody(res, 401, JSON.stringify({ error: 'Missing client_id' }))
+            return
+          }
+          const target = new URL('https://api.jamendo.com/v3.0/tracks/')
+          for (const [k, v] of parsed.searchParams) target.searchParams.set(k, v)
           const upstream = await fetch(target.toString(), { headers: JSON_HEADERS })
           const text = await upstream.text()
           await readBody(res, upstream.status, text)

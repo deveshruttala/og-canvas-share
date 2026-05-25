@@ -1,6 +1,25 @@
 import { useEffect, useState } from 'react'
 import type { CanvasElement, WidgetContent } from '@/types/canvas'
 import { cn } from '@/lib/cn'
+import { fetchRssFeed, type RssItem } from '@/lib/feed-rss'
+import {
+  fetchWeatherBundle,
+  geocodePlace,
+  weatherIcon,
+  type OpenMeteoDay,
+} from '@/lib/open-meteo'
+import {
+  fetchGitHubUserStats,
+  githubContributionChartUrl,
+  type GitHubUserStats,
+} from '@/lib/github-stats'
+import { fetchSpotifyNowPlaying, type SpotifyNowPlaying } from '@/lib/spotify-auth'
+import {
+  fetchStravaRecentActivities,
+  formatStravaDistance,
+  formatStravaDuration,
+  type StravaActivity,
+} from '@/lib/strava-api'
 
 type Props = {
   element: CanvasElement
@@ -39,7 +58,127 @@ export function WidgetElement({ element }: Props) {
   const [time, setTime] = useState(new Date())
   const [playing, setPlaying] = useState(true)
   const [hoverCell, setHoverCell] = useState<number | null>(null)
-  const visBars = useVisBars(12, widget.type === 'spotify' && playing)
+  const [rssItems, setRssItems] = useState<RssItem[]>([])
+  const [rssError, setRssError] = useState<string | null>(null)
+  const [weatherTemp, setWeatherTemp] = useState<number | null>(null)
+  const [weatherCode, setWeatherCode] = useState<number | null>(null)
+  const [weatherUnit, setWeatherUnit] = useState('°C')
+  const [weatherLabel, setWeatherLabel] = useState<string | null>(null)
+  const [weatherDetail, setWeatherDetail] = useState<string | null>(null)
+  const [weatherWind, setWeatherWind] = useState<string | null>(null)
+  const [weatherForecast, setWeatherForecast] = useState<OpenMeteoDay[]>([])
+  const [ghStats, setGhStats] = useState<GitHubUserStats | null>(null)
+  const [ghError, setGhError] = useState<string | null>(null)
+  const [nowPlaying, setNowPlaying] = useState<SpotifyNowPlaying | null>(null)
+  const [spotifyNote, setSpotifyNote] = useState<string | null>(null)
+  const [stravaActs, setStravaActs] = useState<StravaActivity[]>([])
+  const [stravaError, setStravaError] = useState<string | null>(null)
+  const visBars = useVisBars(12, (widget.type === 'spotify' || widget.type === 'spotify_now') && playing)
+
+  useEffect(() => {
+    if (widget.type !== 'rss' || !widget.feedUrl) return
+    let cancelled = false
+    void fetchRssFeed(widget.feedUrl, widget.feedLimit ?? 5)
+      .then((items) => {
+        if (!cancelled) {
+          setRssItems(items)
+          setRssError(null)
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setRssError(e instanceof Error ? e.message : 'Feed unavailable')
+          setRssItems([])
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [widget.type, widget.feedUrl, widget.feedLimit])
+
+  useEffect(() => {
+    if (widget.type !== 'weather') return
+    const place = widget.location?.trim()
+    if (!place) return
+    let cancelled = false
+    void (async () => {
+      const geo = await geocodePlace(place)
+      if (!geo || cancelled) return
+      setWeatherLabel(geo.label)
+      const bundle = await fetchWeatherBundle(geo.lat, geo.lon)
+      if (!bundle || cancelled) return
+      setWeatherTemp(bundle.current.temperature)
+      setWeatherCode(bundle.current.weatherCode)
+      setWeatherUnit(bundle.current.unit)
+      setWeatherDetail(bundle.current.label)
+      setWeatherWind(
+        bundle.current.windSpeed != null
+          ? `Wind ${bundle.current.windSpeed} ${bundle.current.windUnit ?? 'km/h'}`
+          : null,
+      )
+      setWeatherForecast(bundle.forecast)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [widget.type, widget.location])
+
+  useEffect(() => {
+    if (widget.type !== 'github_stats') return
+    const user = widget.username?.trim()
+    if (!user) return
+    let cancelled = false
+    void fetchGitHubUserStats(user)
+      .then((s) => {
+        if (!cancelled) {
+          setGhStats(s)
+          setGhError(null)
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setGhError(e instanceof Error ? e.message : 'GitHub unavailable')
+          setGhStats(null)
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [widget.type, widget.username])
+
+  useEffect(() => {
+    if (widget.type !== 'spotify_now') return
+    const load = () => {
+      void fetchSpotifyNowPlaying().then((np) => {
+        setNowPlaying(np)
+        setSpotifyNote(np ? null : 'Connect Spotify in Connections')
+      })
+    }
+    load()
+    const id = setInterval(load, 20_000)
+    return () => clearInterval(id)
+  }, [widget.type])
+
+  useEffect(() => {
+    if (widget.type !== 'strava') return
+    let cancelled = false
+    void fetchStravaRecentActivities(4)
+      .then((acts) => {
+        if (!cancelled) {
+          setStravaActs(acts)
+          setStravaError(null)
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setStravaError(e instanceof Error ? e.message : 'Strava unavailable')
+          setStravaActs([])
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [widget.type])
 
   useEffect(() => {
     if (widget.type !== 'clock') return
@@ -86,21 +225,167 @@ export function WidgetElement({ element }: Props) {
   }
 
   if (widget.type === 'weather') {
+    const icon = weatherCode != null ? weatherIcon(weatherCode) : '🌤️'
+    const temp = weatherTemp != null ? `${weatherTemp}${weatherUnit}` : '—'
     return (
       <div className={shell} style={{ background: bg }}>
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-sm font-extrabold text-[#beee1d]">{widget.location ?? 'Your city'}</p>
-            <p className="text-[10px] text-neutral-400">Light winds · feels live</p>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-extrabold text-[#beee1d]">
+              {weatherLabel ?? widget.location ?? 'Your city'}
+            </p>
+            <p className="text-[10px] text-neutral-400">
+              {weatherDetail ?? 'Open-Meteo'} {weatherWind ? `· ${weatherWind}` : ''}
+            </p>
           </div>
-          <span className="text-3xl wall-float-slow">🌤️</span>
+          <span className="text-3xl wall-float-slow shrink-0">{icon}</span>
         </div>
-        <div className="mt-auto flex items-end justify-between">
-          <span className="text-4xl font-black wall-glow-text">72°</span>
-          <span className="rounded-full bg-[#beee1d]/10 px-2.5 py-1 text-[9px] font-black tracking-widest text-[#beee1d] wall-pulse-badge">
+        <div className="mt-2 flex items-end justify-between">
+          <span className="text-4xl font-black wall-glow-text">{temp}</span>
+          <span className="rounded-full bg-[#beee1d]/10 px-2.5 py-1 text-[9px] font-black tracking-widest text-[#beee1d]">
             LIVE
           </span>
         </div>
+        {weatherForecast.length > 0 && (
+          <div className="mt-3 flex gap-2 border-t border-white/10 pt-2">
+            {weatherForecast.map((day) => (
+              <div key={day.date} className="flex flex-1 flex-col items-center text-center">
+                <span className="text-sm">{weatherIcon(day.code)}</span>
+                <span className="text-[9px] font-bold text-neutral-400">
+                  {day.max}° / {day.min}°
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  if (widget.type === 'github_stats') {
+    const user = widget.username ?? 'octocat'
+    return (
+      <div className={shell} style={{ background: bg }}>
+        {ghError ? (
+          <p className="text-[10px] text-amber-300/90">{ghError}</p>
+        ) : ghStats ? (
+          <>
+            <div className="flex items-center gap-3">
+              <img
+                src={ghStats.avatarUrl}
+                alt=""
+                className="h-12 w-12 rounded-full border border-white/10"
+              />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold text-[#beee1d]">
+                  {ghStats.name ?? ghStats.login}
+                </p>
+                <p className="text-[10px] text-neutral-400">@{ghStats.login}</p>
+              </div>
+            </div>
+            <div className="mt-2 flex gap-3 text-[10px] font-bold text-neutral-300">
+              <span>{ghStats.publicRepos} repos</span>
+              <span>{ghStats.followers} followers</span>
+            </div>
+            <img
+              src={githubContributionChartUrl(ghStats.login)}
+              alt="Contributions"
+              className="mt-2 h-16 w-full rounded-lg object-cover opacity-90"
+            />
+          </>
+        ) : (
+          <p className="text-[10px] text-neutral-500">Loading GitHub…</p>
+        )}
+        {!ghStats && !ghError && (
+          <p className="mt-1 text-[9px] text-neutral-600">User: {user}</p>
+        )}
+      </div>
+    )
+  }
+
+  if (widget.type === 'spotify_now') {
+    return (
+      <div className={shell} style={{ background: bg }}>
+        {nowPlaying ? (
+          <div className="flex flex-1 items-center gap-3">
+            {nowPlaying.albumArt ? (
+              <img
+                src={nowPlaying.albumArt}
+                alt=""
+                className="h-16 w-16 shrink-0 rounded-lg object-cover shadow-lg"
+              />
+            ) : (
+              <span className="flex h-16 w-16 items-center justify-center rounded-lg bg-[#1db954]/20 text-2xl">
+                🎵
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-bold text-[#beee1d]">{nowPlaying.title}</p>
+              <p className="truncate text-[10px] text-neutral-400">{nowPlaying.artist}</p>
+              <p className="mt-1 text-[9px] text-[#1db954]">
+                {nowPlaying.isPlaying ? '▶ Now playing' : '⏸ Paused'}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-[10px] text-neutral-400">
+            {spotifyNote ?? 'Link Spotify in Connections (OAuth)'}
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  if (widget.type === 'strava') {
+    return (
+      <div className={shell} style={{ background: bg }}>
+        <p className="text-[10px] font-black uppercase tracking-widest text-[#fc4c02]">
+          STRAVA
+        </p>
+        {stravaError ? (
+          <p className="mt-2 text-[10px] text-amber-300/90">{stravaError}</p>
+        ) : (
+          <ul className="mt-2 flex-1 space-y-2">
+            {stravaActs.map((a) => (
+              <li key={a.id} className="min-w-0 border-b border-white/5 pb-1">
+                <p className="truncate text-xs font-semibold">{a.name}</p>
+                <p className="text-[9px] text-neutral-500">
+                  {a.type} · {formatStravaDistance(a.distance)} · {formatStravaDuration(a.movingTime)}
+                </p>
+              </li>
+            ))}
+            {stravaActs.length === 0 && (
+              <li className="text-[10px] text-neutral-500">Loading activities…</li>
+            )}
+          </ul>
+        )}
+      </div>
+    )
+  }
+
+  if (widget.type === 'rss') {
+    return (
+      <div className={shell} style={{ background: bg }}>
+        <p className="text-[10px] font-black uppercase tracking-widest text-[#beee1d]">
+          {(widget.label ?? 'Live feed').toUpperCase()}
+        </p>
+        {rssError ? (
+          <p className="mt-2 text-[10px] text-amber-300/90">{rssError}</p>
+        ) : (
+          <ul className="mt-2 flex-1 space-y-2 overflow-hidden">
+            {rssItems.map((item, i) => (
+              <li key={`${item.link ?? item.title}-${i}`} className="min-w-0">
+                <p className="truncate text-xs font-semibold text-white">{item.title}</p>
+                {item.summary && (
+                  <p className="truncate text-[9px] text-neutral-500">{item.summary}</p>
+                )}
+              </li>
+            ))}
+            {rssItems.length === 0 && !rssError && (
+              <li className="text-[10px] text-neutral-500">Loading feed…</li>
+            )}
+          </ul>
+        )}
       </div>
     )
   }
@@ -137,6 +422,14 @@ export function WidgetElement({ element }: Props) {
             </div>
           </div>
         </div>
+      </div>
+    )
+  }
+
+  if (widget.type !== 'github') {
+    return (
+      <div className={shell} style={{ background: bg }}>
+        <p className="text-[10px] text-neutral-500">Unknown widget</p>
       </div>
     )
   }

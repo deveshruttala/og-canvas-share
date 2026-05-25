@@ -1,0 +1,11 @@
+{
+  "id": "paper-zen",
+  "label": "Paper Zen",
+  "description": "Calm craft paper studio",
+  "category": "community",
+  "workspaceBackground": "linear-gradient(180deg, #e8e4dc 0%, #cfc5b8 100%)",
+  "pageBackground": "repeating-linear-gradient(transparent, transparent 31px, #e7e0d4 31px, #e7e0d4 32px), #faf8f5",
+  "pageBackgroundSize": "100% 32px",
+  "defaultAccent": "#78716c",
+  "canvasClass": "shadow-wall border border-stone-300/60"
+}

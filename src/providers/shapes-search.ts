@@ -25,6 +25,16 @@ export async function searchShapes(query: string, browse = false): Promise<Provi
         useUiStore.getState().setTool('drawing'),
       ),
       actionItem('arrange', 'Auto-arrange', 'Tidy overlapping items', '📐', () => wallActions.autoArrange()),
+      actionItem('poll', 'Quick poll', 'Emoji vote widget', '🗳️', () =>
+        wallActions.addPoll('What do you think?', [
+          { id: 'a', emoji: '🔥', label: 'Love it' },
+          { id: 'b', emoji: '🤔', label: 'Maybe' },
+          { id: 'c', emoji: '👀', label: 'Watching' },
+        ]),
+      ),
+      actionItem('map', 'Map pin', 'Where I am (OSM)', '📍', () =>
+        wallActions.addMap(51.5074, -0.1278, 'London'),
+      ),
     )
   }
 

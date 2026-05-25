@@ -160,6 +160,43 @@ export async function proxyWallImageSearch(
   }
 }
 
+/** Spotify + Strava API forward (browser tokens). */
+export async function proxyWallDataApi(
+  service: string,
+  apiPath: string,
+  search: string,
+  req: Request,
+  cors: (h?: Headers) => Headers,
+): Promise<Response> {
+  const auth = req.headers.get('authorization')
+  if (!auth) {
+    return new Response(JSON.stringify({ error: 'Missing Authorization' }), { status: 401, headers: cors() })
+  }
+  try {
+    if (service === 'spotify') {
+      const target = `https://api.spotify.com/v1/${apiPath}${search}`
+      const upstream = await fetch(target, { headers: { ...JSON_ACCEPT, Authorization: auth } })
+      const body = await upstream.text()
+      return new Response(body || '{}', {
+        status: upstream.status,
+        headers: cors(new Headers({ 'Content-Type': 'application/json' })),
+      })
+    }
+    if (service === 'strava') {
+      const target = `https://www.strava.com/api/v3/${apiPath}${search}`
+      const upstream = await fetch(target, { headers: { ...JSON_ACCEPT, Authorization: auth } })
+      const body = await upstream.text()
+      return new Response(body || '[]', {
+        status: upstream.status,
+        headers: cors(new Headers({ 'Content-Type': 'application/json' })),
+      })
+    }
+    return new Response('Unknown service', { status: 404, headers: cors() })
+  } catch {
+    return new Response('Proxy failed', { status: 502, headers: cors() })
+  }
+}
+
 /** Audio search proxies — mirrors vite-audio-search-proxy.ts */
 export async function proxyWallAudioSearch(
   provider: string,
@@ -185,6 +222,21 @@ export async function proxyWallAudioSearch(
       })
     }
 
+    if (provider === 'jamendo') {
+      const clientId = url.searchParams.get('client_id')
+      if (!clientId) {
+        return new Response(JSON.stringify({ error: 'Missing client_id' }), { status: 401, headers: cors() })
+      }
+      const target = new URL('https://api.jamendo.com/v3.0/tracks/')
+      for (const [k, v] of url.searchParams) target.searchParams.set(k, v)
+      const upstream = await fetch(target.toString(), { headers: JSON_ACCEPT })
+      const body = await upstream.text()
+      return new Response(body, {
+        status: upstream.status,
+        headers: cors(new Headers({ 'Content-Type': 'application/json' })),
+      })
+    }
+
     if (provider === 'freesound') {
       const token = req.headers.get('x-freesound-token')
       if (!token) {
@@ -197,6 +249,51 @@ export async function proxyWallAudioSearch(
       target.searchParams.set('token', token)
       target.searchParams.set('page_size', url.searchParams.get('page_size') ?? '8')
       const upstream = await fetch(target.toString(), { headers: JSON_ACCEPT })
+      const body = await upstream.text()
+      return new Response(body, {
+        status: upstream.status,
+        headers: cors(new Headers({ 'Content-Type': 'application/json' })),
+      })
+    }
+
+    return new Response('Unknown provider', { status: 404, headers: cors() })
+  } catch {
+    return new Response('Proxy failed', { status: 502, headers: cors() })
+  }
+}
+
+/** Stock video search — Coverr + Pexels videos (mirrors vite-media-search-proxy.ts). */
+export async function proxyWallMediaSearch(
+  provider: string,
+  search: string,
+  req: Request,
+  cors: (h?: Headers) => Headers,
+): Promise<Response> {
+  try {
+    const url = new URL(search.startsWith('?') ? `http://x${search}` : `http://x/?${search}`)
+
+    if (provider === 'coverr') {
+      const target = new URL('https://api.coverr.co/videos')
+      target.searchParams.set('query', url.searchParams.get('query') ?? url.searchParams.get('q') ?? 'nature')
+      target.searchParams.set('page_size', url.searchParams.get('page_size') ?? '12')
+      target.searchParams.set('page', url.searchParams.get('page') ?? '0')
+      const upstream = await fetch(target.toString(), { headers: JSON_ACCEPT })
+      const body = await upstream.text()
+      return new Response(body, {
+        status: upstream.status,
+        headers: cors(new Headers({ 'Content-Type': 'application/json' })),
+      })
+    }
+
+    if (provider === 'pexels-videos') {
+      const auth = req.headers.get('authorization')
+      if (!auth) {
+        return new Response(JSON.stringify({ error: 'Missing Authorization' }), { status: 401, headers: cors() })
+      }
+      const q = url.searchParams.get('q') ?? ''
+      const perPage = url.searchParams.get('per_page') ?? '12'
+      const target = `https://api.pexels.com/videos/search?query=${encodeURIComponent(q)}&per_page=${encodeURIComponent(perPage)}`
+      const upstream = await fetch(target, { headers: { ...JSON_ACCEPT, Authorization: auth } })
       const body = await upstream.text()
       return new Response(body, {
         status: upstream.status,

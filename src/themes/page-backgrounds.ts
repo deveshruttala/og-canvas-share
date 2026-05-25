@@ -197,4 +197,85 @@ export const PAGE_BACKGROUNDS: Record<ThemeId, PageBackgroundStyle> = {
     pageFallbackColor: '#292524',
     pageClass: 'wall-page-shadow',
   },
+  sapphire: {
+    pageBackground: 'linear-gradient(160deg, #dbeafe 0%, #93c5fd 50%, #60a5fa 100%)',
+    pageFallbackColor: '#dbeafe',
+    pageClass: 'wall-page-shadow',
+  },
+  ember: {
+    pageBackground: 'linear-gradient(180deg, #292524 0%, #1c1917 100%)',
+    pageFallbackColor: '#292524',
+    pageClass: 'wall-page-shadow',
+  },
+  orchid: {
+    pageBackground: 'linear-gradient(135deg, #fae8ff 0%, #e9d5ff 50%, #d8b4fe 100%)',
+    pageFallbackColor: '#fae8ff',
+    pageClass: 'wall-page-shadow',
+  },
+  sand: {
+    pageBackground: 'linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%)',
+    pageFallbackColor: '#fffbeb',
+    pageClass: 'wall-page-texture',
+  },
+  ink: {
+    pageBackground: '#ffffff',
+    pageFallbackColor: '#ffffff',
+    pageClass: 'wall-page-shadow border border-neutral-300',
+  },
+  nordic: {
+    pageBackground: 'linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%)',
+    pageFallbackColor: '#f8fafc',
+    pageClass: 'wall-page-shadow',
+  },
+  vintage: {
+    pageBackground:
+      'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(120,113,108,0.06) 3px, rgba(120,113,108,0.06) 4px), #f5f0e6',
+    pageFallbackColor: '#f5f0e6',
+    pageClass: 'wall-page-texture wall-page-shadow',
+  },
+  limeade: {
+    pageBackground: 'linear-gradient(180deg, #f7fee7 0%, #ecfccb 100%)',
+    pageFallbackColor: '#f7fee7',
+    pageClass: 'wall-page-shadow',
+  },
+  twilight: {
+    pageBackground: 'linear-gradient(160deg, #1e1b4b 0%, #312e81 100%)',
+    pageFallbackColor: '#1e1b4b',
+    pageClass: 'wall-page-shadow',
+  },
+  mango: {
+    pageBackground: 'linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%)',
+    pageFallbackColor: '#fff7ed',
+    pageClass: 'wall-page-shadow',
+  },
+  glacier: {
+    pageBackground: 'linear-gradient(180deg, #ffffff 0%, #ecfeff 100%)',
+    pageFallbackColor: '#ecfeff',
+    pageClass: 'wall-page-shadow',
+  },
+  copper: {
+    pageBackground: 'linear-gradient(145deg, #ffedd5 0%, #fdba74 50%, #d97706 100%)',
+    pageFallbackColor: '#fdba74',
+    pageClass: 'wall-page-texture',
+  },
+  grape: {
+    pageBackground: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #ddd6fe 100%)',
+    pageFallbackColor: '#ede9fe',
+    pageClass: 'wall-page-shadow',
+  },
+  storm: {
+    pageBackground: 'linear-gradient(180deg, #334155 0%, #1e293b 100%)',
+    pageFallbackColor: '#1e293b',
+    pageClass: 'wall-page-shadow',
+  },
+  matcha: {
+    pageBackground: 'linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%)',
+    pageFallbackColor: '#f0fdf4',
+    pageClass: 'wall-page-shadow',
+  },
+  blush: {
+    pageBackground: 'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)',
+    pageFallbackColor: '#fff1f2',
+    pageClass: 'wall-page-shadow',
+  },
 }

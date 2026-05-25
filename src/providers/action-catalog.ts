@@ -130,7 +130,7 @@ export const WALL_ACTION_CATALOG: WallActionDef[] = [
   {
     id: 'connections',
     title: 'Connections & API keys',
-    subtitle: 'Pixabay, Pexels, Giphy, Freesound',
+    subtitle: 'Pexels, Giphy, Freesound, Coverr video',
     icon: '🔑',
     keywords: ['api', 'key', 'connect', 'provider', 'settings'],
     run: () => useUiStore.getState().setShowConnections(true),
@@ -144,12 +144,12 @@ export const WALL_ACTION_CATALOG: WallActionDef[] = [
     run: () => openOmni('themes', ''),
   },
   {
-    id: 'links',
-    title: 'Add link card',
-    subtitle: 'Search or paste URLs',
+    id: 'widgets-link',
+    title: 'Add service / link',
+    subtitle: 'Notion, GitHub, Spotify widgets · paste URL',
     icon: '🔗',
-    keywords: ['link', 'url', 'website', 'bookmark', 'card'],
-    run: () => openOmni('links', 'https://'),
+    keywords: ['link', 'url', 'website', 'notion', 'widget', 'card'],
+    run: () => openOmni('widgets', ''),
   },
   {
     id: 'audio',

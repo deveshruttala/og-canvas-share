@@ -28,6 +28,7 @@ import {
   fixInvisibleWallHosts,
   sanitizeWallShapeMetas,
   upgradeBrokenEmbeds,
+  upgradeInvalidEmbeds,
   upgradeLegacyBookmarks,
 } from '@/editor/wall-host-shape'
 import { migrateLegacyElements } from '@/editor/wall-migrate'
@@ -99,6 +100,7 @@ function WallTldrawEditorInner({ readOnly = false, className }: Props) {
       fixInvisibleWallHosts(editor)
       void upgradeLegacyBookmarks(editor)
       void upgradeBrokenEmbeds(editor)
+      void upgradeInvalidEmbeds(editor)
 
       editor.setCurrentTool(readOnlyRef.current ? 'hand' : 'select')
 
@@ -152,6 +154,7 @@ function WallTldrawEditorInner({ readOnly = false, className }: Props) {
     <div
       className={`wall-tldraw-root relative h-full w-full ${readOnly ? 'wall-public-view' : ''} ${className ?? ''}`}
       data-wall-theme={themeId}
+      data-wall-export
     >
       <Tldraw
         licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY}

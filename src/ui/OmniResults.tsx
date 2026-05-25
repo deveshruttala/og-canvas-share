@@ -194,7 +194,7 @@ function OmniEmptyState({ filter, query, onClose }: { filter: OmniSearchFilter; 
       </p>
       <p className="omni-empty-hint">
         {filter === 'images'
-          ? 'Wikimedia works with no key. Add a free Pixabay or Pexels key in Connections for stock photos like Unsplash.'
+          ? 'Openverse finds real stock photos with no key. Add Pixabay or Pexels in Connections for even more. Museum art only for painting-style queries.'
           : filter === 'all'
             ? 'Use Media for photos & GIFs, Create for text & stickers, Wall for widgets & themes.'
             : 'Tap a quick pick below, or switch category tabs above.'}
@@ -329,7 +329,8 @@ export function OmniResults({ sections, loading, activeIndex, onSelectIndex, onC
             )}
 
             {section.items.length === 0 ? null : section.id === 'images' ||
-              section.id === 'gifs' ? (
+              section.id === 'gifs' ||
+              section.id === 'videos' ? (
               <div className={thumbGridClass}>
                 {section.items.map((item, i) => {
                   const idx = startIdx + i

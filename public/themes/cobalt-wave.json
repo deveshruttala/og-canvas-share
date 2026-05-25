@@ -1,0 +1,10 @@
+{
+  "id": "cobalt-wave",
+  "label": "Cobalt Wave",
+  "description": "Electric blue studio with frosted board",
+  "category": "community",
+  "workspaceBackground": "linear-gradient(160deg, #1e3a8a 0%, #2563eb 40%, #06b6d4 100%)",
+  "pageBackground": "linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(224,242,254,0.9) 100%)",
+  "defaultAccent": "#0284c7",
+  "canvasClass": "backdrop-blur-sm border border-sky-300/40 shadow-wall"
+}

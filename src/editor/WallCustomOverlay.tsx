@@ -7,7 +7,21 @@ import { ProgressElement } from '@/canvas/elements/ProgressElement'
 import { SoundPadElement } from '@/canvas/elements/SoundPadElement'
 import { PolaroidElement } from '@/canvas/elements/PolaroidElement'
 import { LinkCard } from '@/canvas/elements/LinkCard'
+import { VideoElement } from '@/canvas/elements/VideoElement'
+import { CodeCardElement } from '@/canvas/elements/CodeCardElement'
+import { CalendarEmbedElement } from '@/canvas/elements/CalendarEmbedElement'
+import { PollElement } from '@/canvas/elements/PollElement'
+import { MapElement } from '@/canvas/elements/MapElement'
+import { WallEmbedFrame } from '@/canvas/elements/WallEmbedFrame'
 import { getWallOverlayLayout, type WallHostMeta } from '@/editor/wall-host-shape'
+import {
+  DEFAULT_AUDIO_PLAYER_THEME,
+  DEFAULT_VIDEO_PLAYER_THEME,
+  getAudioPlayerTheme,
+  getVideoPlayerTheme,
+} from '@/lib/wall-player-presets'
+import { isAllowedEmbedIframeHost } from '@/lib/normalize-wall-url'
+import { isEmbeddableUrl } from '@/lib/link-resolver'
 import { toJsonMeta } from '@/lib/json-meta'
 import type { CanvasElement } from '@/types/canvas'
 import { cn } from '@/lib/cn'
@@ -31,11 +45,27 @@ function shapeToCanvasElement(shape: TLGeoShape): CanvasElement | null {
   }
 
   if (meta.wallType === 'audio') {
+    const data = meta.wallData as {
+      src: string
+      title?: string
+      artist?: string
+      cover?: string
+      badge?: string
+    }
+    const themeId = meta.wallStyle?.playerThemeId ?? DEFAULT_AUDIO_PLAYER_THEME
+    const theme = getAudioPlayerTheme(themeId)
     return {
       ...base,
       type: 'audio',
-      content: meta.wallData as { src: string; title?: string },
-      style: { ...base.style, bg: '#0d0e12', color: '#fafafa', borderRadius: 16 },
+      content: data,
+      style: {
+        ...base.style,
+        bg: theme.background,
+        gradient: meta.wallStyle?.gradient ?? theme.background,
+        color: theme.text,
+        borderRadius: 16,
+        playerThemeId: themeId,
+      },
     }
   }
   if (meta.wallType === 'qr') {
@@ -48,11 +78,14 @@ function shapeToCanvasElement(shape: TLGeoShape): CanvasElement | null {
   }
   if (meta.wallType === 'widget') {
     const data = meta.wallData as {
-      type: 'clock' | 'weather' | 'spotify' | 'github'
+      type: 'clock' | 'weather' | 'spotify' | 'spotify_now' | 'github' | 'github_stats' | 'rss' | 'strava'
       label?: string
       location?: string
       timezone?: string
       repo?: string
+      username?: string
+      feedUrl?: string
+      feedLimit?: number
     }
     return {
       ...base,
@@ -83,6 +116,68 @@ function shapeToCanvasElement(shape: TLGeoShape): CanvasElement | null {
       type: 'image',
       content: meta.wallData as { src?: string; caption?: string },
       style: { bg: '#faf8f5', borderRadius: 4 },
+    }
+  }
+  if (meta.wallType === 'video') {
+    const data = meta.wallData as { src?: string; poster?: string; title?: string }
+    const themeId = meta.wallStyle?.playerThemeId ?? DEFAULT_VIDEO_PLAYER_THEME
+    const theme = getVideoPlayerTheme(themeId)
+    return {
+      ...base,
+      type: 'video',
+      content: data,
+      style: {
+        bg: theme.background,
+        gradient: meta.wallStyle?.gradient,
+        color: theme.text,
+        borderRadius: 14,
+        playerThemeId: themeId,
+      },
+    }
+  }
+  if (meta.wallType === 'code') {
+    return {
+      ...base,
+      type: 'widget',
+      content: meta.wallData as { code?: string; language?: string },
+      style: base.style,
+    }
+  }
+  if (meta.wallType === 'calendar') {
+    return {
+      ...base,
+      type: 'embed',
+      content: meta.wallData as { embedUrl: string },
+      style: base.style,
+    }
+  }
+  if (meta.wallType === 'embed') {
+    const data = meta.wallData as { embedUrl: string; originalUrl?: string }
+    return {
+      ...base,
+      type: 'embed',
+      content: data,
+      style: base.style,
+    }
+  }
+  if (meta.wallType === 'poll') {
+    return {
+      ...base,
+      type: 'widget',
+      content: meta.wallData as {
+        pollId: string
+        question: string
+        options: Array<{ id: string; emoji: string; label?: string }>
+      },
+      style: base.style,
+    }
+  }
+  if (meta.wallType === 'map') {
+    return {
+      ...base,
+      type: 'widget',
+      content: meta.wallData as { lat: number; lng: number; zoom?: number; label?: string },
+      style: base.style,
     }
   }
   if (meta.wallType === 'link') {
@@ -142,6 +237,37 @@ export function WallCustomOverlay({ readOnly }: { readOnly?: boolean }) {
     [editor, camera],
   )
 
+  const embedOverlays = useValue(
+    'wall-embed-overlays',
+    () => {
+      void camera
+      return editor
+        .getCurrentPageShapes()
+        .filter((s) => s.type === 'embed')
+        .map((s) => {
+          const props = s.props as { url?: string; w?: number; h?: number }
+          const embedUrl = props.url?.trim() ?? ''
+          if (!embedUrl || !isAllowedEmbedIframeHost(embedUrl) || !isEmbeddableUrl(embedUrl)) {
+            return null
+          }
+          const layout = getWallOverlayLayout(editor, {
+            id: s.id,
+            x: s.x,
+            y: s.y,
+            rotation: s.rotation,
+            props: { w: props.w ?? 400, h: props.h ?? 280 },
+          })
+          return { shapeId: s.id, embedUrl, layout }
+        })
+        .filter(Boolean) as Array<{
+        shapeId: string
+        embedUrl: string
+        layout: ReturnType<typeof getWallOverlayLayout>
+      }>
+    },
+    [editor, camera],
+  )
+
   const updateWallData = (shapeId: string, patch: Record<string, unknown>) => {
     const shape = editor.getShape(shapeId as never)
     if (!shape) return
@@ -179,7 +305,11 @@ export function WallCustomOverlay({ readOnly }: { readOnly?: boolean }) {
               transformOrigin: 'top left',
             }}
           >
-            {wallType === 'audio' && <AudioElement element={el} selected={selected} />}
+            {wallType === 'audio' && (
+              <div className="pointer-events-auto h-full w-full">
+                <AudioElement element={el} selected={selected} />
+              </div>
+            )}
             {wallType === 'qr' && <QrElement element={el} selected={selected} />}
             {wallType === 'widget' && <WidgetElement element={el} selected={selected} />}
             {wallType === 'progress' && <ProgressElement element={el} />}
@@ -191,11 +321,77 @@ export function WallCustomOverlay({ readOnly }: { readOnly?: boolean }) {
                 onCaptionChange={(caption) => updateWallData(shapeId, { caption })}
               />
             )}
+            {wallType === 'video' && (
+              <div className="pointer-events-auto h-full w-full">
+                <VideoElement element={el} selected={selected} />
+              </div>
+            )}
+            {wallType === 'code' && <CodeCardElement element={el} selected={selected} />}
+            {wallType === 'calendar' && (
+              <CalendarEmbedElement
+                embedUrl={(el.content as { embedUrl: string }).embedUrl}
+                selected={selected}
+              />
+            )}
+            {wallType === 'embed' && (
+              <div className="wall-embed-overlay pointer-events-auto h-full w-full">
+                <WallEmbedFrame
+                  embedUrl={(el.content as { embedUrl: string }).embedUrl}
+                  selected={selected}
+                  readOnly={readOnly}
+                />
+              </div>
+            )}
+            {wallType === 'poll' && (
+              <div className="wall-interactive-overlay h-full w-full">
+                <PollElement
+                  pollId={(el.content as { pollId: string }).pollId}
+                  question={(el.content as { question: string }).question}
+                  options={(el.content as { options: Array<{ id: string; emoji: string; label?: string }> }).options}
+                  readOnly={readOnly}
+                  selected={selected}
+                />
+              </div>
+            )}
+            {wallType === 'map' && (
+              <MapElement
+                lat={(el.content as { lat: number }).lat}
+                lng={(el.content as { lng: number }).lng}
+                zoom={(el.content as { zoom?: number }).zoom}
+                label={(el.content as { label?: string }).label}
+                selected={selected}
+              />
+            )}
             {wallType === 'link' && (
               <div className="wall-link-overlay h-full w-full">
                 <LinkCard element={el} selected={selected} readOnly />
               </div>
             )}
+          </div>
+        )
+      })}
+
+      {embedOverlays.map(({ shapeId, embedUrl, layout }) => {
+        const selected = selectedIds.has(shapeId as never)
+        return (
+          <div
+            key={`embed-${shapeId}`}
+            className={cn(
+              'pointer-events-none absolute origin-top-left wall-overlay-shell',
+              selected && 'wall-overlay-selected',
+            )}
+            style={{
+              left: layout.left,
+              top: layout.top,
+              width: layout.width,
+              height: layout.height,
+              transform: layout.rotationDeg ? `rotate(${layout.rotationDeg}deg)` : undefined,
+              transformOrigin: 'top left',
+            }}
+          >
+            <div className="wall-embed-overlay pointer-events-auto h-full w-full">
+              <WallEmbedFrame embedUrl={embedUrl} selected={selected} readOnly={readOnly} />
+            </div>
           </div>
         )
       })}

@@ -4,6 +4,7 @@ export type OmniSearchFilter =
   | 'all'
   | 'images'
   | 'gifs'
+  | 'video'
   | 'audio'
   | 'emojis'
   | 'stickers'
@@ -11,7 +12,6 @@ export type OmniSearchFilter =
   | 'text'
   | 'shapes'
   | 'themes'
-  | 'links'
   | 'actions'
 
 export type OmniThumbCols = 4 | 5 | 6
@@ -25,16 +25,16 @@ export const OMNI_SEARCH_FILTERS: {
   group: 'media' | 'create' | 'wall'
 }[] = [
   { id: 'all', label: 'All', shortLabel: 'All', hint: 'Search everything at once', emoji: '✨', group: 'wall' },
-  { id: 'images', label: 'Images', shortLabel: 'Img', hint: 'Met + Art Institute + Wikimedia + Pixabay/Pexels', emoji: '🖼️', group: 'media' },
-  { id: 'gifs', label: 'GIFs', shortLabel: 'GIF', hint: 'Animated loops — Giphy, Tenor, Openverse', emoji: '🎬', group: 'media' },
-  { id: 'audio', label: 'Audio', shortLabel: 'Audio', hint: 'iTunes song previews · Mixkit SFX · Pixabay/Freesound', emoji: '🎵', group: 'media' },
+  { id: 'images', label: 'Images', shortLabel: 'Img', hint: 'Openverse stock (no key) + Pixabay/Pexels/Unsplash', emoji: '🖼️', group: 'media' },
+  { id: 'gifs', label: 'GIFs', shortLabel: 'GIF', hint: 'Animated loops — Giphy, Tenor', emoji: '🎬', group: 'media' },
+  { id: 'video', label: 'Video', shortLabel: 'Vid', hint: 'YouTube search · stock clips · paste watch URL', emoji: '🎥', group: 'media' },
+  { id: 'audio', label: 'Audio', shortLabel: 'Audio', hint: 'Search songs · YouTube & Spotify · iTunes · SFX', emoji: '🎵', group: 'media' },
   { id: 'emojis', label: 'Emojis', shortLabel: 'Emoji', hint: 'Emoji stamps from the full library', emoji: '😀', group: 'create' },
   { id: 'stickers', label: 'Stickers', shortLabel: 'Stick', hint: 'Emojis + icon stickers combined', emoji: '⭐', group: 'create' },
   { id: 'text', label: 'Text', shortLabel: 'Text', hint: 'Text boxes, stickies, typography widgets', emoji: '🔤', group: 'create' },
   { id: 'shapes', label: 'Shapes', shortLabel: 'Shape', hint: 'Geo shapes, frames, dividers', emoji: '⬡', group: 'create' },
-  { id: 'widgets', label: 'Widgets', shortLabel: 'Widget', hint: 'Clocks, GitHub, weather, QR, tools', emoji: '🧩', group: 'wall' },
+  { id: 'widgets', label: 'Widgets', shortLabel: 'Widget', hint: 'Notion, GitHub, QR, Spotify · paste any URL', emoji: '🧩', group: 'wall' },
   { id: 'themes', label: 'Themes', shortLabel: 'Theme', hint: 'Canvas backgrounds and moods', emoji: '🎨', group: 'wall' },
-  { id: 'links', label: 'Links', shortLabel: 'Link', hint: 'Paste URLs for rich link cards', emoji: '🔗', group: 'wall' },
   { id: 'actions', label: 'Actions', shortLabel: 'Act', hint: 'Themes, arrange, share, undo', emoji: '⚡', group: 'wall' },
 ]
 
@@ -42,6 +42,7 @@ export const OMNI_SEARCH_FILTERS: {
 export const OMNI_BROWSE_QUERIES: Partial<Record<OmniSearchFilter, string>> = {
   images: 'cinematic landscape',
   gifs: 'celebration party',
+  video: 'cinematic nature drone',
   audio: 'lofi piano ambient',
   emojis: 'fire rocket star',
   stickers: 'sparkle badge icon',
@@ -49,7 +50,6 @@ export const OMNI_BROWSE_QUERIES: Partial<Record<OmniSearchFilter, string>> = {
   text: 'heading quote',
   shapes: 'arrow frame',
   themes: 'neon dark',
-  links: 'youtube github',
   actions: 'arrange share undo',
 }
 
@@ -62,7 +62,14 @@ export const OMNI_QUICK_TAGS: Partial<Record<OmniSearchFilter, OmniQuickTag[]>> 
     { label: 'Neon theme', query: 'change theme to neon', emoji: '💚' },
     { label: 'GitHub', query: 'github stats widget', emoji: '🐙' },
   ],
+  video: [
+    { label: 'Music video', query: 'official music video', emoji: '🎬' },
+    { label: 'Nature', query: 'nature forest aerial', emoji: '🌲' },
+    { label: 'City', query: 'city timelapse night', emoji: '🌃' },
+    { label: 'Ocean', query: 'ocean waves beach', emoji: '🌊' },
+  ],
   images: [
+    { label: 'Train', query: 'train railway locomotive', emoji: '🚂' },
     { label: 'Movies', query: 'cinema movie film still', emoji: '🎬' },
     { label: 'Nature', query: 'nature forest mountains', emoji: '🌲' },
     { label: 'Portrait', query: 'portrait photography', emoji: '📷' },
@@ -78,16 +85,13 @@ export const OMNI_QUICK_TAGS: Partial<Record<OmniSearchFilter, OmniQuickTag[]>> 
     { label: 'Dance', query: 'dance moves', emoji: '💃' },
   ],
   audio: [
+    { label: 'Despacito', query: 'despacito luis fonsi', emoji: '🎤' },
     { label: 'Lofi', query: 'lofi chill beats', emoji: '🎧' },
+    { label: 'Spotify', query: 'spotify focus playlist', emoji: '🎵' },
+    { label: 'YouTube', query: 'chill music youtube', emoji: '▶️' },
     { label: 'Piano', query: 'piano calm music', emoji: '🎹' },
-    { label: 'Jazz', query: 'jazz lounge', emoji: '🎷' },
     { label: 'Rain', query: 'rain ambient', emoji: '🌧️' },
-    { label: 'Ocean', query: 'ocean waves', emoji: '🌊' },
     { label: 'UI sounds', query: 'notification click ui', emoji: '🔔' },
-    { label: 'Applause', query: 'applause celebration', emoji: '👏' },
-    { label: 'Spotify', query: 'spotify focus', emoji: '🎵' },
-    { label: 'Nature', query: 'forest birds nature', emoji: '🌲' },
-    { label: 'Game', query: 'arcade game sfx', emoji: '🎮' },
   ],
   emojis: [
     { label: 'Work', query: 'office laptop', emoji: '💼' },
@@ -102,12 +106,13 @@ export const OMNI_QUICK_TAGS: Partial<Record<OmniSearchFilter, OmniQuickTag[]>> 
     { label: 'Tech', query: 'code dev laptop', emoji: '💻' },
   ],
   widgets: [
+    { label: 'Notion', query: 'notion', emoji: '📓' },
+    { label: 'GitHub', query: 'github', emoji: '🐙' },
+    { label: 'Spotify', query: 'spotify widget', emoji: '🎵' },
     { label: 'Clock', query: 'clock countdown', emoji: '⏱️' },
     { label: 'Weather', query: 'weather forecast', emoji: '☁️' },
-    { label: 'GitHub', query: 'github', emoji: '🐙' },
-    { label: 'Spotify', query: 'spotify music', emoji: '🎵' },
     { label: 'QR', query: 'qr code', emoji: '📱' },
-    { label: 'Goals', query: 'progress goal', emoji: '📈' },
+    { label: 'Figma', query: 'figma', emoji: '🎨' },
   ],
   text: [
     { label: 'Heading', query: 'heading title', emoji: '📌' },
@@ -131,14 +136,6 @@ export const OMNI_QUICK_TAGS: Partial<Record<OmniSearchFilter, OmniQuickTag[]>> 
     { label: 'Apricot', query: 'apricot', emoji: '🍑' },
     { label: 'Espresso', query: 'espresso coffee', emoji: '☕' },
   ],
-  links: [
-    { label: 'YouTube', query: 'youtube', emoji: '▶️' },
-    { label: 'Spotify', query: 'spotify', emoji: '🎵' },
-    { label: 'GitHub', query: 'github', emoji: '🐙' },
-    { label: 'Notion', query: 'notion', emoji: '📓' },
-    { label: 'Figma', query: 'figma', emoji: '🎨' },
-    { label: 'Paste URL', query: 'https://example.com', emoji: '🔗' },
-  ],
   actions: [
     { label: 'Arrange', query: 'arrange', emoji: '📐' },
     { label: 'Share', query: 'share', emoji: '🔗' },
@@ -152,14 +149,12 @@ export const OMNI_QUICK_TAGS: Partial<Record<OmniSearchFilter, OmniQuickTag[]>> 
 }
 
 export const OMNI_PLACEHOLDERS = [
-  'Search images, GIFs, widgets, emojis, audio…',
-  'Try Images → movies or cinematic',
-  'Try GIFs → celebration',
-  'Try Widgets → github weather clock',
-  'Try Themes → neon galaxy cork',
-  'Try Text → sticky heading quote',
-  'Try Actions → change theme to neon',
-  'Paste a link to add a rich card',
+  'Search images, GIFs, widgets, songs, emojis…',
+  'Try Audio → despacito (YouTube & Spotify)',
+  'Try Video → music video or nature clips',
+  'Try Widgets → notion github spotify',
+  'Try Images → train or cinematic',
+  'Paste a YouTube or Spotify URL in any tab',
 ]
 
 export const OMNI_SECTION_HELP: Record<string, { title: string; description: string }> = {
@@ -169,12 +164,28 @@ export const OMNI_SECTION_HELP: Record<string, { title: string; description: str
   },
   images: {
     title: 'Images',
-    description: 'Met Museum + Art Institute + Wikimedia (no key). Pixabay/Pexels/Unsplash with keys.',
+    description: 'Openverse stock photos (no key). Pixabay/Pexels/Unsplash with keys. Museums for art queries.',
   },
   gifs: { title: 'GIFs', description: 'Animated loops — add Giphy/Tenor keys in Connections for more' },
+  videos: {
+    title: 'Video clips',
+    description: 'Coverr stock video (no key). Pexels HD clips with your Pexels key.',
+  },
+  streaming: {
+    title: 'YouTube & Spotify',
+    description: 'Search songs and add embed players. Paste a track URL at the top of any tab.',
+  },
+  youtube: {
+    title: 'YouTube',
+    description: 'Search videos to embed. Paste a youtube.com/watch URL.',
+  },
+  'paste-url': {
+    title: 'Add to wall',
+    description: 'Paste a URL for an embed player or rich link card.',
+  },
   audio: {
-    title: 'Audio',
-    description: 'iTunes 30s song previews (no key) + Mixkit SFX. Pixabay/Freesound for more.',
+    title: 'Audio clips',
+    description: 'iTunes previews, SFX, and ambient sounds. Use Audio tab streaming row for full songs.',
   },
   icons: {
     title: 'Icons',
@@ -186,14 +197,13 @@ export const OMNI_SECTION_HELP: Record<string, { title: string; description: str
   },
   emojis: { title: 'Emojis', description: 'Stamp onto the wall — or open full picker from dock' },
   stickers: { title: 'Stickers & icons', description: 'Emojis and icon stamps in one place' },
-  widgets: { title: 'Widgets', description: 'Pre-built blocks from the widget library' },
+  widgets: {
+    title: 'Widgets & services',
+    description: 'Notion, GitHub, Spotify, QR, clocks — plus paste any https:// URL',
+  },
   text: { title: 'Text & notes', description: 'Add typography and note widgets' },
   shapes: { title: 'Shapes & layout', description: 'Frames, arrows, and structure widgets' },
   themes: { title: 'Canvas themes', description: 'Change the whole wall mood instantly' },
-  links: {
-    title: 'Links',
-    description: 'Quick sites, Wikipedia matches, or paste any https:// URL',
-  },
 }
 
 export function omniFilterPlaceholder(filter: OmniSearchFilter): string {

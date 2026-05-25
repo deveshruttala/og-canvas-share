@@ -1,0 +1,11 @@
+{
+  "id": "neon-grid",
+  "label": "Neon Grid",
+  "description": "Retro cyber grid wall",
+  "category": "community",
+  "workspaceBackground": "linear-gradient(#0a0a0a 1px, transparent 1px), linear-gradient(90deg, #0a0a0a 1px, transparent 1px), #050505",
+  "workspaceClass": "wall-theme-dotgrid",
+  "pageBackground": "linear-gradient(180deg, #111827 0%, #030712 100%)",
+  "defaultAccent": "#beee1d",
+  "canvasClass": "border border-[#beee1d]/30 shadow-[0_0_32px_rgba(190,238,29,0.12)]"
+}

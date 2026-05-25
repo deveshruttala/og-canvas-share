@@ -17,6 +17,7 @@ import {
 import { detectLinkPlatform, getEmbedUrl } from '@/lib/link-resolver'
 import { fetchLinkMeta } from '@/lib/extract-link-meta'
 import { debounce } from '@/lib/cn'
+import { isImageBackgroundUrl } from '@/editor/wall-page-background'
 import { getTheme } from '@/themes'
 import { saveCanvas } from '@/persist/db'
 import { LOCAL_CANVAS_ID, shouldPersistDoc } from '@/persist/constants'
@@ -33,7 +34,14 @@ type CanvasState = {
 
   hydrate: (doc: CanvasDoc) => void
   setTheme: (theme: ThemeId, accent?: string) => void
-  setPageBackground: (value: string | null) => void
+  setPageBackground: (value: string | null, backgroundSize?: string | null) => void
+  applyCommunityTheme: (theme: {
+    id: string
+    workspaceBackground: string
+    pageBackground: string
+    pageBackgroundSize?: string
+    defaultAccent: string
+  }) => void
   setTitle: (title: string) => void
   select: (id: string | null) => void
   addElement: (element: CanvasElement) => void
@@ -132,11 +140,34 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     schedulePersist()
   },
 
-  setPageBackground: (value) => {
+  setPageBackground: (value, backgroundSize) => {
     set((state) =>
       withUpdatedDoc(state, (doc) => ({
         ...doc,
         customPageBackground: value,
+        customPageBackgroundSize:
+          backgroundSize !== undefined
+            ? backgroundSize
+            : !value
+              ? null
+              : isImageBackgroundUrl(value)
+                ? 'cover'
+                : null,
+      })),
+    )
+    schedulePersist()
+  },
+
+  applyCommunityTheme: (theme) => {
+    set((state) =>
+      withUpdatedDoc(state, (doc) => ({
+        ...doc,
+        communityThemeId: theme.id,
+        customWorkspaceBackground: theme.workspaceBackground,
+        customPageBackground: theme.pageBackground,
+        customPageBackgroundSize: theme.pageBackgroundSize ?? null,
+        accent: theme.defaultAccent,
+        meta: { ...doc.meta, updatedAt: new Date().toISOString() },
       })),
     )
     schedulePersist()

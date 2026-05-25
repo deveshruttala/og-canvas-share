@@ -3,7 +3,8 @@ import type { TLGeoShape } from '@tldraw/tlschema'
 import { createShapeId, toRichText } from 'tldraw'
 import { fetchLinkMeta } from '@/lib/extract-link-meta'
 import { toJsonMeta } from '@/lib/json-meta'
-import { detectLinkPlatform, getEmbedUrl } from '@/lib/link-resolver'
+import { isAllowedEmbedIframeHost, normalizeWallUrl } from '@/lib/normalize-wall-url'
+import { getEmbedUrl, detectLinkPlatform, isEmbeddableUrl } from '@/lib/link-resolver'
 import {
   getSoundPadSize,
   legacySoundPadSampleId,
@@ -11,9 +12,22 @@ import {
 } from '@/lib/sound-pad-samples'
 
 export type WallHostMeta = {
-  wallType: 'audio' | 'qr' | 'widget' | 'progress' | 'soundpad' | 'polaroid' | 'link'
+  wallType:
+    | 'audio'
+    | 'qr'
+    | 'widget'
+    | 'progress'
+    | 'soundpad'
+    | 'polaroid'
+    | 'link'
+    | 'video'
+    | 'code'
+    | 'calendar'
+    | 'embed'
+    | 'poll'
+    | 'map'
   wallData: Record<string, unknown>
-  wallStyle?: { gradient?: string }
+  wallStyle?: { gradient?: string; gradientId?: string; playerThemeId?: string }
 }
 
 /** Invisible geo rectangle — HTML overlay in WallCustomOverlay provides the visuals. */
@@ -40,6 +54,16 @@ export function wallHostGeoProps(w: number, h: number) {
 export const WALL_LINK_W = 320
 export const WALL_LINK_H = 148
 
+function fallbackLinkTitle(url: string): string {
+  try {
+    const u = new URL(url)
+    const path = u.pathname === '/' ? '' : u.pathname.replace(/\/$/, '').split('/').pop()
+    return path ? decodeURIComponent(path.replace(/-/g, ' ')) : u.hostname.replace(/^www\./, '')
+  } catch {
+    return 'Link'
+  }
+}
+
 export function buildWallLinkMeta(
   url: string,
   data: { title?: string; description?: string; image?: string },
@@ -48,7 +72,7 @@ export function buildWallLinkMeta(
     wallType: 'link',
     wallData: {
       url,
-      title: data.title ?? url,
+      title: data.title && data.title !== url ? data.title : fallbackLinkTitle(url),
       description: data.description,
       image: data.image,
     },
@@ -63,7 +87,7 @@ export async function createWallLinkShape(
   center: { x: number; y: number },
   hints?: { title?: string; description?: string; image?: string },
 ) {
-  const normalized = /^https?:\/\//i.test(url) ? url : `https://${url}`
+  const normalized = normalizeWallUrl(url)
   const meta = hints?.title
     ? { title: hints.title, description: hints.description, image: hints.image }
     : await fetchLinkMeta(normalized)
@@ -105,7 +129,10 @@ export async function upgradeLegacyBookmarks(editor: Editor) {
  * Must use pageToViewport (not pageToScreen) — the overlay layer shares the
  * tldraw viewport origin; pageToScreen includes screenBounds and misaligns widgets.
  */
-export function getWallOverlayLayout(editor: Editor, shape: TLGeoShape) {
+export function getWallOverlayLayout(
+  editor: Editor,
+  shape: { id: TLGeoShape['id']; x: number; y: number; rotation: number; props: { w: number; h: number } },
+) {
   const bounds = editor.getShapePageBounds(shape.id)
   const zoom = editor.getZoomLevel()
 
@@ -131,23 +158,54 @@ export function getWallOverlayLayout(editor: Editor, shape: TLGeoShape) {
   }
 }
 
-function canEmbedUrl(url: string): boolean {
-  const platform = detectLinkPlatform(url)
-  if (!['youtube', 'spotify', 'vimeo', 'soundcloud'].includes(platform)) return false
-  return !!getEmbedUrl(url, platform)
-}
-
-/** Replace broken iframe embeds (X-Frame-Options) with link cards. */
+/** Replace tldraw embed shapes that cannot load in an iframe with rich link cards. */
 export async function upgradeBrokenEmbeds(editor: Editor) {
   const embeds = editor.getCurrentPageShapes().filter((s) => s.type === 'embed')
   for (const shape of embeds) {
     const url = (shape.props as { url?: string }).url
-    if (!url || canEmbedUrl(url)) continue
+    if (!url) {
+      editor.deleteShapes([shape.id])
+      continue
+    }
+    const normalized = normalizeWallUrl(url)
+    if (isAllowedEmbedIframeHost(normalized)) continue
+
     const bounds = editor.getShapePageBounds(shape.id)
     const cx = bounds ? bounds.x + bounds.w / 2 : shape.x
     const cy = bounds ? bounds.y + bounds.h / 2 : shape.y
     editor.run(() => editor.deleteShapes([shape.id]))
-    await createWallLinkShape(editor, url, { x: cx, y: cy })
+    await createWallLinkShape(editor, normalized, { x: cx, y: cy })
+  }
+}
+
+/** Replace tldraw embeds that point at homepages or other non-player URLs with link cards. */
+export async function upgradeInvalidEmbeds(editor: Editor) {
+  const embeds = editor.getCurrentPageShapes().filter((s) => s.type === 'embed')
+  for (const shape of embeds) {
+    const props = shape.props as { url?: string; w?: number; h?: number }
+    const rawUrl = props.url?.trim() ?? ''
+    if (!rawUrl) {
+      editor.deleteShapes([shape.id])
+      continue
+    }
+    const normalized = normalizeWallUrl(rawUrl)
+    const platform = detectLinkPlatform(normalized)
+    const embedUrl = getEmbedUrl(normalized, platform) ?? rawUrl
+    if (isEmbeddableUrl(embedUrl) && isAllowedEmbedIframeHost(embedUrl)) {
+      if (embedUrl !== rawUrl) {
+        editor.updateShape({
+          id: shape.id,
+          type: 'embed',
+          props: { ...props, url: embedUrl },
+        })
+      }
+      continue
+    }
+    const bounds = editor.getShapePageBounds(shape.id)
+    const cx = bounds ? bounds.x + bounds.w / 2 : shape.x
+    const cy = bounds ? bounds.y + bounds.h / 2 : shape.y
+    editor.run(() => editor.deleteShapes([shape.id]))
+    await createWallLinkShape(editor, normalized, { x: cx, y: cy })
   }
 }
 

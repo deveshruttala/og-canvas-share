@@ -32,22 +32,59 @@ export function detectLinkPlatform(url: string): LinkPlatform {
   return 'generic'
 }
 
+/** Extract a YouTube video id from watch, embed, shorts, or youtu.be URLs. */
+export function extractYoutubeVideoId(url: string): string | null {
+  try {
+    const u = new URL(url)
+    const host = u.hostname.replace(/^www\./, '')
+    if (host === 'youtu.be') {
+      const id = u.pathname.split('/').filter(Boolean)[0]
+      return id && id.length >= 6 ? id : null
+    }
+    if (!host.includes('youtube.com')) return null
+    const v = u.searchParams.get('v')
+    if (v && v.length >= 6) return v
+    const parts = u.pathname.split('/').filter(Boolean)
+    if (parts[0] === 'embed' || parts[0] === 'shorts' || parts[0] === 'live') {
+      const id = parts[1]
+      return id && id.length >= 6 ? id : null
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+const SPOTIFY_EMBED_PATH =
+  /^\/(track|album|playlist|episode|show|artist|audiobook|concert|station)\/[\w-]+/i
+
+/** True when URL can load in an iframe player (not a bare homepage). */
+export function isEmbeddableUrl(url: string): boolean {
+  const platform = detectLinkPlatform(url)
+  return Boolean(getEmbedUrl(url, platform))
+}
+
 /** Build embed iframe src for supported platforms */
 export function getEmbedUrl(url: string, platform: LinkPlatform): string | null {
   try {
     const u = new URL(url)
     if (platform === 'youtube') {
-      const id = u.searchParams.get('v') ?? u.pathname.split('/').pop()
+      const id = extractYoutubeVideoId(url)
       return id ? `https://www.youtube.com/embed/${id}` : null
     }
     if (platform === 'spotify') {
-      return `https://open.spotify.com/embed${u.pathname}${u.search}`
+      const path = u.pathname.replace(/\/$/, '') || ''
+      if (!path || path === '' || !SPOTIFY_EMBED_PATH.test(path)) return null
+      return `https://open.spotify.com/embed${path}${u.search}`
     }
     if (platform === 'vimeo') {
-      const id = u.pathname.split('/').filter(Boolean).pop()
-      return id ? `https://player.vimeo.com/video/${id}` : null
+      const parts = u.pathname.split('/').filter(Boolean)
+      const id = parts[0] === 'video' ? parts[1] : parts.pop()
+      return id && /^\d+$/.test(id) ? `https://player.vimeo.com/video/${id}` : null
     }
     if (platform === 'soundcloud') {
+      const parts = u.pathname.split('/').filter(Boolean)
+      if (parts.length < 2) return null
       return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23ff6b35`
     }
   } catch {

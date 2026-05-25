@@ -1,0 +1,10 @@
+{
+  "id": "matcha-studio",
+  "label": "Matcha Studio",
+  "description": "Calm green tea workspace with cream board",
+  "category": "community",
+  "workspaceBackground": "linear-gradient(160deg, #14532d 0%, #166534 50%, #4ade80 100%)",
+  "pageBackground": "linear-gradient(180deg, #f0fdf4 0%, #bbf7d0 100%)",
+  "defaultAccent": "#15803d",
+  "canvasClass": "shadow-wall border border-green-200/60"
+}

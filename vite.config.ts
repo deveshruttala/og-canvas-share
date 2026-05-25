@@ -4,9 +4,20 @@ import path from 'path'
 import { wallProxyPlugin } from './vite-proxy-plugin'
 import { wallImageSearchProxyPlugin } from './vite-image-search-proxy'
 import { wallAudioSearchProxyPlugin } from './vite-audio-search-proxy'
+import { wallMediaSearchProxyPlugin } from './vite-media-search-proxy'
+import { wallDataApiProxyPlugin } from './vite-data-api-proxy'
+import { wallMusicSearchProxyPlugin } from './vite-music-search-proxy'
 
 export default defineConfig({
-  plugins: [react(), wallProxyPlugin(), wallImageSearchProxyPlugin(), wallAudioSearchProxyPlugin()],
+  plugins: [
+    react(),
+    wallProxyPlugin(),
+    wallImageSearchProxyPlugin(),
+    wallAudioSearchProxyPlugin(),
+    wallMediaSearchProxyPlugin(),
+    wallDataApiProxyPlugin(),
+    wallMusicSearchProxyPlugin(),
+  ],
   base: process.env.VITE_BASE || '/',
   server: {
     proxy: {

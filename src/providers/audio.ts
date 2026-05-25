@@ -5,6 +5,7 @@ import { searchInternetArchiveAudio } from '@/providers/audio-sources/archive'
 import { searchPixabayAudio } from '@/providers/audio-sources/pixabay-audio'
 import { searchFreesoundAudio } from '@/providers/audio-sources/freesound'
 import { searchItunesMusic } from '@/providers/audio-sources/itunes'
+import { searchJamendoTracks } from '@/providers/audio-sources/jamendo'
 import type { OmniItem } from '@/providers/types'
 
 const MAX_ITEMS = 32
@@ -27,22 +28,24 @@ export async function searchAudio(query: string, browse = false): Promise<Provid
   if (raw.length < 2 && !browse) return null
   const q = raw.length < 2 ? 'lofi chill' : raw
 
-  const [itunes, curated, archive, pixabay, freesound] = await Promise.all([
+  const [itunes, jamendo, freesound, curated, pixabay, archive] = await Promise.all([
     searchItunesMusic(q, 14),
+    searchJamendoTracks(q, 8),
+    searchFreesoundAudio(q, 8),
     Promise.resolve(searchCuratedAudio(q, 12)),
-    searchInternetArchiveAudio(q, 4),
     searchPixabayAudio(q, 6),
-    searchFreesoundAudio(q, 6),
+    searchInternetArchiveAudio(q, 4),
   ])
 
-  let items = dedupeItems([...itunes, ...curated, ...pixabay, ...freesound, ...archive])
+  let items = dedupeItems([...itunes, ...jamendo, ...freesound, ...curated, ...pixabay, ...archive])
   items = items.filter((item) => Boolean(item.payload?.src ?? item.previewUrl))
 
   const sources: string[] = []
   if (itunes.length) sources.push('iTunes previews')
-  sources.push('Mixkit SFX')
-  if (hasKey('pixabay')) sources.push('Pixabay')
+  if (jamendo.length) sources.push('Jamendo CC tracks')
   if (hasKey('freesound')) sources.push('Freesound')
+  sources.push('Mixkit SFX')
+  if (hasKey('pixabay')) sources.push('Pixabay audio')
   if (archive.length) sources.push('Internet Archive')
 
   const needsKey =

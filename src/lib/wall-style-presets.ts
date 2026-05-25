@@ -21,6 +21,13 @@ export const WALL_GRADIENT_PRESETS = [
   { id: 'peach-sorbet', label: 'Peach Sorbet', css: 'linear-gradient(135deg,#fff7ed,#fdba74,#fb7185)' },
   { id: 'steel-blue', label: 'Steel Blue', css: 'linear-gradient(180deg,#1e3a5f,#2563eb,#93c5fd)' },
   { id: 'hologram', label: 'Hologram', css: 'linear-gradient(120deg,#22d3ee,#a78bfa,#f472b6,#beee1d)' },
+  { id: 'sapphire-glow', label: 'Sapphire Glow', css: 'linear-gradient(135deg,#0c4a6e,#2563eb,#38bdf8)' },
+  { id: 'ember-coal', label: 'Ember Coal', css: 'linear-gradient(160deg,#1c1917,#ea580c,#fbbf24)' },
+  { id: 'orchid-mist', label: 'Orchid Mist', css: 'linear-gradient(120deg,#581c87,#c084fc,#f5d0fe)' },
+  { id: 'sand-dune', label: 'Sand Dune', css: 'linear-gradient(180deg,#fef3c7,#fde68a,#fcd34d)' },
+  { id: 'nordic-frost', label: 'Nordic Frost', css: 'linear-gradient(180deg,#f8fafc,#cbd5e1,#64748b)' },
+  { id: 'vintage-fade', label: 'Vintage Fade', css: 'linear-gradient(145deg,#d6d3d1,#a8a29e,#78716c)' },
+  { id: 'lime-zest', label: 'Lime Zest', css: 'linear-gradient(120deg,#ecfccb,#84cc16,#365314)' },
 ] as const
 
 export const WALL_BORDER_PRESETS = [

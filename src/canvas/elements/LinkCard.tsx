@@ -12,26 +12,31 @@ type LinkCardProps = {
 
 export function LinkCard({ element, selected, readOnly }: LinkCardProps) {
   const content = element.content as LinkContent
+  const showUrlLine = content.title !== content.url && !content.image
+  const title =
+    content.title && content.title !== content.url ? content.title : 'Open link'
 
   const cardBody = (
-    <div className="flex h-full flex-col overflow-hidden p-3">
+    <div className="flex h-full flex-col overflow-hidden p-3 text-[#fafafa]">
       {content.image ? (
         <img
           src={displayAssetUrl(content.image)}
           alt=""
-          className="mb-2 h-12 w-full rounded object-cover"
+          className="mb-2 max-h-[58%] min-h-[3.5rem] w-full flex-1 rounded-lg object-cover"
           draggable={false}
         />
       ) : null}
       <div className="flex min-h-0 flex-1 flex-col gap-1">
         <div className="flex items-start gap-2">
-          <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 opacity-60" />
-          <p className="line-clamp-2 text-sm font-semibold leading-tight">{content.title}</p>
+          <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 opacity-70" />
+          <p className="line-clamp-2 text-sm font-semibold leading-tight">{title}</p>
         </div>
         {content.description ? (
-          <p className="line-clamp-2 text-xs opacity-70">{content.description}</p>
+          <p className="line-clamp-2 text-xs text-white/70">{content.description}</p>
         ) : null}
-        <p className="mt-auto truncate text-xs opacity-50">{content.url}</p>
+        {showUrlLine ? (
+          <p className="mt-auto truncate text-[10px] text-white/45">{content.url}</p>
+        ) : null}
       </div>
     </div>
   )

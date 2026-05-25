@@ -1,0 +1,10 @@
+{
+  "id": "storm-grey",
+  "label": "Storm Grey",
+  "description": "Moody thunder clouds with slate board",
+  "category": "community",
+  "workspaceBackground": "linear-gradient(180deg, #1f2937 0%, #111827 60%, #0f172a 100%)",
+  "pageBackground": "linear-gradient(180deg, #475569 0%, #334155 100%)",
+  "defaultAccent": "#38bdf8",
+  "canvasClass": "border border-slate-500/40 shadow-wall-lg"
+}

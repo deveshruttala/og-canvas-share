@@ -30,7 +30,10 @@ import {
   timelineUndo,
 } from '@/editor/wall-timeline-history'
 import { createWallLinkShape, wallHostGeoProps } from '@/editor/wall-host-shape'
-import { detectLinkPlatform, getEmbedUrl } from '@/lib/link-resolver'
+import { detectLinkPlatform, getEmbedUrl, isEmbeddableUrl } from '@/lib/link-resolver'
+import { isAllowedEmbedIframeHost, normalizeWallUrl } from '@/lib/normalize-wall-url'
+import { classifyUrl } from '@/paste/router'
+import { executePasteRoute } from '@/paste/execute'
 import { blobToDataUrl, compressImage, probeImageSize } from '@/lib/compress-image'
 import { fetchExternalAssetAsDataUrl, isRemoteHttpUrl } from '@/lib/asset-proxy'
 import { getSoundPadSize } from '@/lib/sound-pad-samples'
@@ -133,6 +136,7 @@ export function getWallShapeKind(shape: WallShapeLike): string {
     return 'Widget'
   }
   if (meta?.wallType === 'audio') return 'Audio'
+  if (meta?.wallType === 'video') return 'Video'
   if (meta?.wallType === 'qr') return 'QR Code'
   if (meta?.wallType === 'progress') return 'Progress'
   if (meta?.wallType === 'soundpad') return 'Sound Pad'
@@ -331,22 +335,20 @@ export const wallActions = {
     y?: number,
     hints?: { title?: string; description?: string; image?: string },
   ) {
-    const normalized = /^https?:\/\//i.test(url) ? url : `https://${url}`
+    const normalized = normalizeWallUrl(url)
     const platform = detectLinkPlatform(normalized)
     const embedUrl = getEmbedUrl(normalized, platform)
     const { x: px, y: py } = place(x, y)
 
-    if (embedUrl && ['youtube', 'spotify', 'vimeo', 'soundcloud'].includes(platform)) {
+    if (embedUrl && isAllowedEmbedIframeHost(embedUrl) && isEmbeddableUrl(embedUrl)) {
+      const w = platform === 'spotify' ? 400 : 480
+      const h = platform === 'spotify' ? 152 : 270
       ed().createShape({
         id: createShapeId(),
         type: 'embed',
-        x: px - 200,
-        y: py - 120,
-        props: {
-          w: platform === 'spotify' ? 400 : 480,
-          h: platform === 'spotify' ? 152 : 270,
-          url: embedUrl,
-        },
+        x: px - w / 2,
+        y: py - h / 2,
+        props: { w, h, url: embedUrl },
       })
       return
     }
@@ -367,8 +369,12 @@ export const wallActions = {
       x: x - 160,
       y: y - 60,
       opacity: 0.001,
-      props: wallHostGeoProps(320, 120),
-      meta: toJsonMeta({ wallType: 'audio', wallData: { src, title: title ?? file.name } }),
+      props: wallHostGeoProps(380, 148),
+      meta: toJsonMeta({
+        wallType: 'audio',
+        wallData: { src, title: title ?? file.name, badge: 'Audio' },
+        wallStyle: { playerThemeId: 'neon-lime' },
+      }),
     })
   },
 
@@ -390,9 +396,23 @@ export const wallActions = {
     return wallActions.addQr(url, x, y)
   },
 
-  addWidget(type: 'clock' | 'weather' | 'spotify' | 'github', extra?: Record<string, string>, x?: number, y?: number) {
+  addWidget(
+    type: 'clock' | 'weather' | 'spotify' | 'spotify_now' | 'github' | 'github_stats' | 'rss' | 'strava',
+    extra?: Record<string, string | number>,
+    x?: number,
+    y?: number,
+  ) {
     const { x: px, y: py } = place(x, y)
-    const sizes = { clock: [280, 140], weather: [300, 160], spotify: [360, 200], github: [380, 240] } as const
+    const sizes = {
+      clock: [280, 140],
+      weather: [300, 160],
+      spotify: [360, 200],
+      spotify_now: [360, 200],
+      github: [380, 240],
+      github_stats: [400, 280],
+      rss: [320, 220],
+      strava: [340, 220],
+    } as const
     const [w, h] = sizes[type]
     ed().createShape({
       id: createShapeId(),
@@ -405,7 +425,11 @@ export const wallActions = {
     })
   },
 
-  addWidgetAt(type: 'clock' | 'weather' | 'spotify' | 'github', x?: number, y?: number) {
+  addWidgetAt(
+    type: 'clock' | 'weather' | 'spotify' | 'spotify_now' | 'github' | 'github_stats' | 'rss' | 'strava',
+    x?: number,
+    y?: number,
+  ) {
     wallActions.addWidget(type, undefined, x, y)
   },
 
@@ -447,7 +471,7 @@ export const wallActions = {
   },
 
   async pasteUrl(url: string) {
-    await wallActions.addLink(url)
+    await executePasteRoute(classifyUrl(url))
   },
 
   async pasteText(text: string) {
@@ -480,24 +504,116 @@ export const wallActions = {
     if (editor) pushTimelineMark(editor, label)
   },
 
-  addEmbed(url: string) {
-    const normalized = /^https?:\/\//i.test(url) ? url : `https://${url}`
+  addEmbed(url: string, embedUrlOverride?: string) {
+    const normalized = normalizeWallUrl(url)
     const platform = detectLinkPlatform(normalized)
-    const embedUrl = getEmbedUrl(normalized, platform)
+    const embedUrl = embedUrlOverride ?? getEmbedUrl(normalized, platform)
     const { x, y } = place()
 
-    if (embedUrl && ['youtube', 'spotify', 'vimeo', 'soundcloud'].includes(platform)) {
+    if (embedUrl && isAllowedEmbedIframeHost(embedUrl) && isEmbeddableUrl(embedUrl)) {
+      const w = platform === 'spotify' ? 500 : 500
+      const h = platform === 'spotify' ? 152 : 300
       ed().createShape({
         id: createShapeId(),
         type: 'embed',
-        x: x - 250,
-        y: y - 150,
-        props: { w: 500, h: 300, url: embedUrl },
+        x: x - w / 2,
+        y: y - h / 2,
+        props: { w, h, url: embedUrl },
       })
       return
     }
 
     void wallActions.addLink(normalized, x, y)
+  },
+
+  addCodeCard(code: string, language?: string, x?: number, y?: number) {
+    const { x: px, y: py } = place(x, y)
+    const w = 360
+    const h = 220
+    ed().createShape({
+      id: createShapeId(),
+      type: 'geo',
+      x: px - w / 2,
+      y: py - h / 2,
+      opacity: 0.001,
+      props: wallHostGeoProps(w, h),
+      meta: toJsonMeta({ wallType: 'code', wallData: { code: code.slice(0, 8000), language } }),
+    })
+  },
+
+  addCalendarEmbed(url: string, x?: number, y?: number) {
+    const { x: px, y: py } = place(x, y)
+    const w = 380
+    const h = 420
+    ed().createShape({
+      id: createShapeId(),
+      type: 'geo',
+      x: px - w / 2,
+      y: py - h / 2,
+      opacity: 0.001,
+      props: wallHostGeoProps(w, h),
+      meta: toJsonMeta({ wallType: 'calendar', wallData: { embedUrl: url } }),
+    })
+  },
+
+  addPoll(
+    question: string,
+    options: Array<{ id: string; emoji: string; label?: string }>,
+    x?: number,
+    y?: number,
+  ) {
+    const { x: px, y: py } = place(x, y)
+    const pollId = `poll-${Date.now()}`
+    const w = 320
+    const h = 160
+    ed().createShape({
+      id: createShapeId(),
+      type: 'geo',
+      x: px - w / 2,
+      y: py - h / 2,
+      opacity: 0.001,
+      props: wallHostGeoProps(w, h),
+      meta: toJsonMeta({ wallType: 'poll', wallData: { pollId, question, options } }),
+    })
+  },
+
+  addMap(lat: number, lng: number, label?: string, zoom = 13, x?: number, y?: number) {
+    const { x: px, y: py } = place(x, y)
+    const w = 400
+    const h = 280
+    ed().createShape({
+      id: createShapeId(),
+      type: 'geo',
+      x: px - w / 2,
+      y: py - h / 2,
+      opacity: 0.001,
+      props: wallHostGeoProps(w, h),
+      meta: toJsonMeta({ wallType: 'map', wallData: { lat, lng, zoom, label } }),
+    })
+  },
+
+  addVideoClip(
+    src: string,
+    opts?: { poster?: string; title?: string },
+    x?: number,
+    y?: number,
+  ) {
+    const { x: px, y: py } = place(x, y)
+    const w = 480
+    const h = 300
+    ed().createShape({
+      id: createShapeId(),
+      type: 'geo',
+      x: px - w / 2,
+      y: py - h / 2,
+      opacity: 0.001,
+      props: wallHostGeoProps(w, h),
+      meta: toJsonMeta({
+        wallType: 'video',
+        wallData: { src, poster: opts?.poster, title: opts?.title },
+        wallStyle: { playerThemeId: 'cinema-dark' },
+      }),
+    })
   },
 
   autoArrange() {
@@ -751,7 +867,7 @@ export const wallActions = {
       x: px - 160,
       y: py - 60,
       opacity: 0.001,
-      props: wallHostGeoProps(320, 120),
+      props: wallHostGeoProps(data.cover ? 400 : 380, data.cover ? 160 : 148),
       meta: toJsonMeta({
         wallType: 'audio',
         wallData: {
@@ -760,6 +876,9 @@ export const wallActions = {
           artist: data.artist,
           cover: data.cover,
           badge: data.badge ?? 'Audio',
+        },
+        wallStyle: {
+          playerThemeId: data.cover ? 'card-art' : 'neon-lime',
         },
       }),
     })
@@ -789,8 +908,59 @@ export const wallActions = {
       case 'spotify':
         wallActions.addWidget('spotify', { label: str('label', widget.name) }, x, y)
         break
+      case 'spotify_now':
+        wallActions.addWidget('spotify_now', { label: str('label', widget.name) }, x, y)
+        break
       case 'github':
         wallActions.addWidget('github', { repo: str('repo', 'user/repo') }, x, y)
+        break
+      case 'github_stats':
+        wallActions.addWidget(
+          'github_stats',
+          { username: str('username', 'octocat'), label: str('label', widget.name) },
+          x,
+          y,
+        )
+        break
+      case 'strava':
+        wallActions.addWidget('strava', { label: str('label', widget.name) }, x, y)
+        break
+      case 'poll': {
+        let options = [
+          { id: 'a', emoji: '🔥' },
+          { id: 'b', emoji: '👍' },
+          { id: 'c', emoji: '🎉' },
+        ]
+        try {
+          const raw = cfg.options
+          if (typeof raw === 'string') options = JSON.parse(raw) as typeof options
+        } catch {
+          /* defaults */
+        }
+        wallActions.addPoll(str('question', widget.name), options, x, y)
+        break
+      }
+      case 'map':
+        wallActions.addMap(
+          num('lat', 51.5),
+          num('lng', -0.12),
+          str('location', widget.name),
+          num('zoom', 13),
+          x,
+          y,
+        )
+        break
+      case 'rss':
+        wallActions.addWidget(
+          'rss',
+          {
+            label: str('label', widget.name),
+            feedUrl: str('feedUrl', ''),
+            feedLimit: num('feedLimit', 5),
+          },
+          x,
+          y,
+        )
         break
       case 'progress':
         wallActions.addProgress(str('title', widget.name), num('current', 42), num('max', 100), str('color', '#beee1d'), x, y)

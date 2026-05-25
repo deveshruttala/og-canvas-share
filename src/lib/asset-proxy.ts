@@ -18,6 +18,7 @@ const DIRECT_THUMB_HOSTS = [
   'i.pixabay.com',
   'picsum.photos',
   'fastly.picsum.photos',
+  'live.staticflickr.com',
   'media.giphy.com',
   'media.tenor.com',
   'c.tenor.com',

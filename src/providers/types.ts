@@ -2,6 +2,7 @@ export type OmniItemKind =
   | 'action'
   | 'image'
   | 'gif'
+  | 'video'
   | 'audio'
   | 'emoji'
   | 'icon'
