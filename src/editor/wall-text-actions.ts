@@ -4,12 +4,14 @@ import {
   DEFAULT_TEXT_BOX_STYLE,
   type WallStickyColor,
   type WallTextBoxStyle,
+  type WallTextAlign,
   type WallTextColor,
   type WallTextDisplayMode,
   type WallTextFont,
   type WallTextSize,
   readWallTextBoxStyle,
 } from '@/lib/wall-text-style'
+import { toJsonMeta } from '@/lib/json-meta'
 
 function richTextFromShape(props: { richText?: unknown }): ReturnType<typeof toRichText> {
   const rt = props.richText
@@ -41,12 +43,12 @@ export function createTextBoxShape(
       color: style.color,
       size: style.size,
       font: style.font,
-      textAlign: 'start',
+      textAlign: style.textAlign === 'middle' ? 'middle' : style.textAlign,
       autoSize: true,
       w: 320,
       scale: 1,
     },
-    meta: { wallTextBox: style },
+    meta: toJsonMeta({ wallTextBox: style }),
   })
   return id
 }
@@ -83,9 +85,9 @@ export function createStickyNoteShape(
       url: '',
       scale: 1,
     },
-    meta: {
+    meta: toJsonMeta({
       wallTextBox: { ...DEFAULT_TEXT_BOX_STYLE, mode: 'sticky', stickyColor, ...opts.style },
-    },
+    }),
   })
   return id
 }
@@ -109,12 +111,15 @@ export function applyTextBoxStyleToShape(
     editor.updateShape({
       id: shape.id,
       type: 'text',
-      meta: { ...shape.meta, wallTextBox },
+      meta: toJsonMeta({ ...(shape.meta as Record<string, unknown>), wallTextBox }),
       props: {
         ...props,
         ...(stylePatch.color ? { color: stylePatch.color } : {}),
         ...(stylePatch.size ? { size: stylePatch.size } : {}),
         ...(stylePatch.font ? { font: stylePatch.font } : {}),
+        ...(stylePatch.textAlign
+          ? { textAlign: stylePatch.textAlign === 'middle' ? 'middle' : stylePatch.textAlign }
+          : {}),
         ...(richText ? { richText } : {}),
       },
     })
@@ -126,11 +131,12 @@ export function applyTextBoxStyleToShape(
     editor.updateShape({
       id: shape.id,
       type: 'note',
-      meta: { ...shape.meta, wallTextBox },
+      meta: toJsonMeta({ ...(shape.meta as Record<string, unknown>), wallTextBox }),
       props: {
         ...props,
         ...(stylePatch.stickyColor ? { color: stylePatch.stickyColor } : {}),
         ...(stylePatch.font ? { font: stylePatch.font } : {}),
+        ...(stylePatch.textAlign ? { align: stylePatch.textAlign } : {}),
         ...(richText ? { richText } : {}),
       },
     })
@@ -172,7 +178,12 @@ export function setTextDisplayMode(
 export function updateTextTypography(
   editor: Editor,
   shapeIds: string[],
-  patch: { font?: WallTextFont; size?: WallTextSize; color?: WallTextColor },
+  patch: {
+    font?: WallTextFont
+    size?: WallTextSize
+    color?: WallTextColor
+    textAlign?: WallTextAlign
+  },
 ) {
   editor.run(() => {
     for (const id of shapeIds) {

@@ -75,9 +75,10 @@ async function searchDeezer(q: string): Promise<ProviderResult['section']['items
   }
 }
 
-export async function searchAudio(query: string): Promise<ProviderResult | null> {
-  const q = query.trim()
-  if (q.length < 2) return null
+export async function searchAudio(query: string, browse = false): Promise<ProviderResult | null> {
+  const raw = query.trim()
+  if (raw.length < 2 && !browse) return null
+  const q = raw.length < 2 ? 'ambient' : raw
 
   const freesoundToken = getProviderKey('freesound')
   const [fx, music] = await Promise.all([searchFreesound(q, freesoundToken), searchDeezer(q)])
@@ -103,7 +104,7 @@ export async function searchAudio(query: string): Promise<ProviderResult | null>
       title: 'Audio',
       source: [freesoundToken && 'Freesound', 'Deezer'].filter(Boolean).join(' + ') || 'Demo',
       needsKey: !freesoundToken ? 'freesound' : undefined,
-      items: items.slice(0, 8),
+      items: items.slice(0, 10),
     },
   }
 }

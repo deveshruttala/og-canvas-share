@@ -43,7 +43,10 @@ async function searchOpenverseGifs(q: string, limit = 24): Promise<OmniItem[]> {
   try {
     const url = `${OPENVERSE_GIF_BASE}?q=${encodeURIComponent(q)}&page_size=${limit}&extension=gif`
     const res = await fetch(url)
-    if (!res.ok) return []
+    if (!res.ok) {
+      console.warn('[gifs] Openverse GIF search failed', res.status)
+      return []
+    }
     const data = (await res.json()) as {
       results?: Array<{
         id: string
@@ -149,7 +152,7 @@ export async function fetchGifPickerResults(query: string): Promise<{
 
   const giphyKey = getProviderKey('giphy')
   const tenorKey = getProviderKey('tenor')
-  const limit = 24
+  const limit = 48
 
   const [openverse, giphy, tenor, giphyTrending] = await Promise.all([
     searchOpenverseGifs(searchQ, limit),
@@ -206,17 +209,18 @@ function toPickItem(item: OmniItem): GifPickItem {
   }
 }
 
-export async function searchGifs(query: string): Promise<ProviderResult | null> {
-  const q = query.trim()
-  if (q.length < 2) return null
+export async function searchGifs(query: string, browse = false): Promise<ProviderResult | null> {
+  const raw = query.trim()
+  if (raw.length < 2 && !browse) return null
+  const q = raw.length < 2 ? 'fun' : raw
 
   const giphyKey = getProviderKey('giphy')
   const tenorKey = getProviderKey('tenor')
 
   const [openverse, giphy, tenor] = await Promise.all([
-    searchOpenverseGifs(q, 12),
-    searchGiphy(q, giphyKey, 12),
-    searchTenor(q, tenorKey, 12),
+    searchOpenverseGifs(q, 20),
+    searchGiphy(q, giphyKey, 20),
+    searchTenor(q, tenorKey, 20),
   ])
 
   const merged = dedupeItems([...giphy, ...tenor, ...openverse])
@@ -246,8 +250,8 @@ export async function searchGifs(query: string): Promise<ProviderResult | null> 
       id: 'gifs',
       title: 'GIFs',
       source: sources.join(' + ') || 'Search',
-      items: merged.slice(0, 12),
-      more: merged.length > 12,
+      items: merged.slice(0, 32),
+      more: merged.length > 32,
     },
   }
 }

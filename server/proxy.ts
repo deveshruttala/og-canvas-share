@@ -55,9 +55,10 @@ export async function proxyOpenverse(
   pathAndQuery: string,
   cors: (h?: Headers) => Headers,
 ): Promise<Response> {
-  const target = `https://api.openverse.engineering${pathAndQuery}`
+  const target = `https://api.openverse.org${pathAndQuery}`
   try {
     const upstream = await fetch(target, {
+      redirect: 'follow',
       headers: { 'User-Agent': 'WallCanvas/1.0', Accept: 'application/json' },
     })
     const body = await upstream.text()

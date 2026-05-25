@@ -2,65 +2,75 @@ import { create } from 'zustand'
 import type { OmniSection } from '@/providers/types'
 import { runOmniSearch } from '@/providers/index'
 import { debounce } from '@/lib/cn'
+import {
+  OMNI_PLACEHOLDERS,
+  omniFilterPlaceholder,
+  type OmniSearchFilter,
+} from '@/lib/omni-catalog'
 
 type OmniState = {
   open: boolean
   query: string
+  filter: OmniSearchFilter
   sections: OmniSection[]
   loading: boolean
   activeIndex: number
   placeholderIdx: number
   setOpen: (open: boolean) => void
   setQuery: (query: string) => void
+  setFilter: (filter: OmniSearchFilter) => void
   setActiveIndex: (idx: number) => void
   tickPlaceholder: () => void
   search: (query: string) => Promise<void>
 }
 
-const PLACEHOLDERS = [
-  'Add anything, ask anything…',
-  'Try: a sunset photo',
-  'Try: lofi piano clip',
-  'Try: make this look cozier',
-  'Try: GitHub stats widget',
-]
+let searchDebounced: ((q: string, filter: OmniSearchFilter) => void) | null = null
 
-let searchDebounced: ((q: string) => void) | null = null
+export const useOmniStore = create<OmniState>((set, get) => {
+  const runSearch = async (q: string, filter: OmniSearchFilter) => {
+    set({ loading: true })
+    const sections = await runOmniSearch(q, filter)
+    set({ sections, loading: false, activeIndex: 0 })
+  }
 
-export const useOmniStore = create<OmniState>((set) => {
-  searchDebounced = debounce((q: string) => {
-    void (async () => {
-      set({ loading: true })
-      const sections = await runOmniSearch(q)
-      set({ sections, loading: false, activeIndex: 0 })
-    })()
+  searchDebounced = debounce((q: string, filter: OmniSearchFilter) => {
+    void runSearch(q, filter)
   }, 200)
 
   return {
     open: false,
     query: '',
+    filter: 'all',
     sections: [],
     loading: false,
     activeIndex: 0,
     placeholderIdx: 0,
     setOpen: (open) => set({ open }),
+    setFilter: (filter) => {
+      set({ filter })
+      const { query } = get()
+      void runSearch(query, filter)
+    },
     setQuery: (query) => {
+      const filter = get().filter
       set({ query })
-      searchDebounced?.(query)
+      searchDebounced?.(query, filter)
     },
     setActiveIndex: (activeIndex) => set({ activeIndex }),
     tickPlaceholder: () =>
-      set((s) => ({ placeholderIdx: (s.placeholderIdx + 1) % PLACEHOLDERS.length })),
+      set((s) => ({ placeholderIdx: (s.placeholderIdx + 1) % OMNI_PLACEHOLDERS.length })),
     search: async (query) => {
+      const filter = get().filter
       set({ loading: true, query })
-      const sections = await runOmniSearch(query)
+      const sections = await runOmniSearch(query, filter)
       set({ sections, loading: false, activeIndex: 0 })
     },
   }
 })
 
-export function getOmniPlaceholders() {
-  return PLACEHOLDERS
+export function getOmniPlaceholders(filter: OmniSearchFilter = 'all') {
+  if (filter !== 'all') return [omniFilterPlaceholder(filter), ...OMNI_PLACEHOLDERS.slice(1)]
+  return OMNI_PLACEHOLDERS
 }
 
 export function flattenOmniItems(sections: OmniSection[]) {

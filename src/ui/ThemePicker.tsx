@@ -79,7 +79,7 @@ export function ThemePicker() {
 
       {open && (
         <div
-          className="wall-theme-panel absolute bottom-full left-0 z-[70] mb-2 w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-neutral-800 bg-neutral-950 p-3 shadow-2xl"
+          className="wall-theme-panel absolute bottom-full left-0 mb-2 w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-neutral-800 bg-neutral-950 p-3 shadow-2xl"
           role="listbox"
           aria-label="Page and workspace backgrounds"
         >

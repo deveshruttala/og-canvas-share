@@ -111,7 +111,7 @@ export function WidgetPicker() {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search 100 widgets…"
+                placeholder="Search widget library…"
                 className="flex-1 bg-transparent text-sm outline-none"
               />
             </div>

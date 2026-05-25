@@ -3,6 +3,7 @@ import { AssetRecordType, createShapeId, toRichText } from '@tldraw/tlschema'
 import type { CanvasElement } from '@/types/canvas'
 import { detectLinkPlatform, getEmbedUrl } from '@/lib/link-resolver'
 import { buildWallLinkMeta, wallHostGeoProps, WALL_LINK_H, WALL_LINK_W } from '@/editor/wall-host-shape'
+import { toJsonMeta } from '@/lib/json-meta'
 
 /** One-time migration from legacy CanvasElement[] to tldraw shapes */
 export function migrateLegacyElements(editor: Editor, elements: CanvasElement[]) {
@@ -130,10 +131,10 @@ export function migrateLegacyElements(editor: Editor, elements: CanvasElement[])
           scale: 1,
           richText: toRichText(''),
         },
-        meta: {
+        meta: toJsonMeta({
           wallType: el.type,
-          wallData: JSON.parse(JSON.stringify(el.content)),
-        },
+          wallData: el.content as Record<string, unknown>,
+        }),
       })
     }
   }

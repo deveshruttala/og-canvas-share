@@ -137,4 +137,64 @@ export const PAGE_BACKGROUNDS: Record<ThemeId, PageBackgroundStyle> = {
     pageFallbackColor: '#dcfce7',
     pageClass: 'wall-page-shadow',
   },
+  paper: {
+    pageBackground:
+      'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.02) 3px, rgba(0,0,0,0.02) 4px), #f5f0e8',
+    pageFallbackColor: '#f5f0e8',
+    pageClass: 'wall-page-texture wall-page-shadow',
+  },
+  galaxy: {
+    pageBackground:
+      'radial-gradient(circle at 30% 40%, rgba(99,102,241,0.25) 0%, transparent 50%), radial-gradient(circle at 70% 60%, rgba(236,72,153,0.15) 0%, transparent 45%), #0f172a',
+    pageFallbackColor: '#0f172a',
+    pageClass: 'wall-page-shadow',
+  },
+  cyber: {
+    pageBackground:
+      'radial-gradient(circle, rgba(34,211,238,0.08) 1px, transparent 1px), #111827',
+    pageBackgroundSize: '16px 16px',
+    pageBackgroundRepeat: 'repeat',
+    pageFallbackColor: '#111827',
+    pageClass: 'wall-page-shadow',
+  },
+  coral: {
+    pageBackground: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #ccfbf1 100%)',
+    pageFallbackColor: '#fff7ed',
+    pageClass: 'wall-page-shadow',
+  },
+  zen: {
+    pageBackground: 'linear-gradient(180deg, #fafaf9 0%, #f5f5f4 100%)',
+    pageFallbackColor: '#fafaf9',
+    pageClass: 'wall-page-shadow',
+  },
+  apricot: {
+    pageBackground: 'linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%)',
+    pageFallbackColor: '#fff7ed',
+    pageClass: 'wall-page-shadow',
+  },
+  terracotta: {
+    pageBackground: 'linear-gradient(145deg, #ffedd5 0%, #fdba74 50%, #ea580c 100%)',
+    pageFallbackColor: '#fdba74',
+    pageClass: 'wall-page-texture',
+  },
+  arctic: {
+    pageBackground: 'linear-gradient(180deg, #ffffff 0%, #e0f2fe 100%)',
+    pageFallbackColor: '#f0f9ff',
+    pageClass: 'wall-page-shadow',
+  },
+  blossom: {
+    pageBackground: 'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%)',
+    pageFallbackColor: '#fdf2f8',
+    pageClass: 'wall-page-shadow',
+  },
+  comic: {
+    pageBackground: '#fef08a',
+    pageFallbackColor: '#fef08a',
+    pageClass: 'wall-page-shadow border-4 border-black',
+  },
+  espresso: {
+    pageBackground: 'linear-gradient(160deg, #44403c 0%, #292524 50%, #1c1917 100%)',
+    pageFallbackColor: '#292524',
+    pageClass: 'wall-page-shadow',
+  },
 }

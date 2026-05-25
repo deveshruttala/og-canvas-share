@@ -8,6 +8,7 @@ import { SoundPadElement } from '@/canvas/elements/SoundPadElement'
 import { PolaroidElement } from '@/canvas/elements/PolaroidElement'
 import { LinkCard } from '@/canvas/elements/LinkCard'
 import { getWallOverlayLayout, type WallHostMeta } from '@/editor/wall-host-shape'
+import { toJsonMeta } from '@/lib/json-meta'
 import type { CanvasElement } from '@/types/canvas'
 import { cn } from '@/lib/cn'
 
@@ -148,7 +149,7 @@ export function WallCustomOverlay({ readOnly }: { readOnly?: boolean }) {
     editor.updateShape({
       id: shape.id,
       type: shape.type,
-      meta: { ...meta, wallData: { ...meta.wallData, ...patch } } as typeof shape.meta,
+      meta: toJsonMeta({ ...meta, wallData: { ...meta.wallData, ...patch } }),
     })
   }
 
@@ -159,7 +160,7 @@ export function WallCustomOverlay({ readOnly }: { readOnly?: boolean }) {
   )
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-[300] overflow-hidden">
+    <div className="pointer-events-none absolute inset-0 z-[120] overflow-hidden">
       {overlays.map(({ el, layout, shapeId, wallType }) => {
         const selected = selectedIds.has(shapeId as never)
         return (

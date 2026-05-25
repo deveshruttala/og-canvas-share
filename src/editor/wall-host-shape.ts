@@ -1,7 +1,8 @@
 import type { Editor } from '@tldraw/editor'
 import type { TLGeoShape } from '@tldraw/tlschema'
-import { createShapeId } from 'tldraw'
+import { createShapeId, toRichText } from 'tldraw'
 import { fetchLinkMeta } from '@/lib/extract-link-meta'
+import { toJsonMeta } from '@/lib/json-meta'
 import { detectLinkPlatform, getEmbedUrl } from '@/lib/link-resolver'
 
 export type WallHostMeta = {
@@ -26,7 +27,8 @@ export function wallHostGeoProps(w: number, h: number) {
     growY: 0,
     url: '',
     scale: 1,
-    richText: { type: 'doc' as const, content: [] },
+    labelColor: 'black' as const,
+    richText: toRichText(''),
   }
 }
 
@@ -37,8 +39,8 @@ export function buildWallLinkMeta(
   url: string,
   data: { title?: string; description?: string; image?: string },
 ) {
-  return {
-    wallType: 'link' as const,
+  return toJsonMeta({
+    wallType: 'link',
     wallData: {
       url,
       title: data.title ?? url,
@@ -47,7 +49,7 @@ export function buildWallLinkMeta(
     },
     wallStyle: { gradient: 'linear-gradient(145deg, #242836 0%, #12141a 100%)' },
     linkTo: { url, openInNewTab: true },
-  }
+  })
 }
 
 export async function createWallLinkShape(
@@ -142,6 +144,22 @@ export async function upgradeBrokenEmbeds(editor: Editor) {
     editor.run(() => editor.deleteShapes([shape.id]))
     await createWallLinkShape(editor, url, { x: cx, y: cy })
   }
+}
+
+/** Fix persisted meta with undefined nested fields (breaks tldraw JSON validation). */
+export function sanitizeWallShapeMetas(editor: Editor) {
+  const shapes = editor.getCurrentPageShapes().filter((s) => s.meta && Object.keys(s.meta).length > 0)
+  if (shapes.length === 0) return
+
+  editor.run(() => {
+    for (const shape of shapes) {
+      const raw = shape.meta as Record<string, unknown>
+      const clean = toJsonMeta(raw)
+      if (JSON.stringify(clean) !== JSON.stringify(raw)) {
+        editor.updateShape({ id: shape.id, type: shape.type, meta: clean })
+      }
+    }
+  })
 }
 
 /** Upgrade legacy widget hosts that used solid fills (visible grey boxes). */

@@ -6,13 +6,21 @@ import { useUiStore } from '@/store/ui.store'
 import { getWallEditor } from '@/editor/wall-editor-api'
 import { cn } from '@/lib/cn'
 
+/** Full tldraw color palette for scribbles. */
 const NEON_COLORS = [
   { id: 'light-green', label: 'Neon', swatch: '#beee1d' },
   { id: 'yellow', label: 'Gold', swatch: '#facc15' },
   { id: 'light-blue', label: 'Cyan', swatch: '#22d3ee' },
+  { id: 'blue', label: 'Blue', swatch: '#3b82f6' },
   { id: 'light-violet', label: 'Violet', swatch: '#a78bfa' },
-  { id: 'light-red', label: 'Hot', swatch: '#f472b6' },
+  { id: 'violet', label: 'Purple', swatch: '#8b5cf6' },
+  { id: 'light-red', label: 'Pink', swatch: '#f472b6' },
+  { id: 'red', label: 'Red', swatch: '#ef4444' },
+  { id: 'orange', label: 'Orange', swatch: '#f97316' },
+  { id: 'green', label: 'Green', swatch: '#22c55e' },
+  { id: 'grey', label: 'Grey', swatch: '#94a3b8' },
   { id: 'black', label: 'Ink', swatch: '#fafafa' },
+  { id: 'white', label: 'White', swatch: '#ffffff' },
 ] as const
 
 const SIZES = [
@@ -46,7 +54,7 @@ export function DrawBrushPanel() {
     <div className="wall-brush-panel pointer-events-auto">
       <span className="wall-brush-label">Scribble</span>
 
-      <div className="flex items-center gap-1">
+      <div className="flex max-w-[min(100vw-8rem,28rem)] flex-wrap items-center gap-1">
         {NEON_COLORS.map((c) => (
           <button
             key={c.id}
@@ -55,6 +63,7 @@ export function DrawBrushPanel() {
             className={cn(
               'wall-brush-swatch',
               brushColor === c.id && 'wall-brush-swatch-active',
+              c.id === 'white' && 'ring-1 ring-white/30',
             )}
             style={{ background: c.swatch, opacity: brushOpacity }}
             onClick={() => {

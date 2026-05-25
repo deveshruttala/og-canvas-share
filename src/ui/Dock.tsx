@@ -125,8 +125,9 @@ export function Dock() {
   }
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[calc(20px+env(safe-area-inset-bottom))]">
-      <div className="wall-dock wall-dock-fade pointer-events-auto flex max-w-[min(960px,100%)] items-center gap-2 overflow-x-auto rounded-3xl p-3 font-mono scrollbar-none">
+    <div className="wall-dock-layer pointer-events-none fixed inset-x-0 bottom-0 flex justify-center px-4 pb-[calc(20px+env(safe-area-inset-bottom))]">
+      <div className="wall-dock wall-dock-fade pointer-events-auto flex max-w-[min(960px,100%)] items-center gap-2 rounded-3xl p-3 font-mono">
+        <div className="wall-dock-scroll flex min-w-0 flex-1 items-center gap-2 overflow-x-auto scrollbar-none">
         {/* Undo / Redo / Auto-arrange */}
         <div className="flex shrink-0 items-center gap-0.5">
           <button
@@ -258,11 +259,12 @@ export function Dock() {
             📸 Polaroid
           </button>
         </div>
+        </div>
 
         <Divider />
 
-        {/* Theme + zoom + share */}
-        <div className="flex shrink-0 items-center gap-2">
+        {/* Theme + zoom + share — outside scroll so popovers are not clipped */}
+        <div className="wall-dock-menus flex shrink-0 items-center gap-2">
           <button
             type="button"
             className="wall-widget-pill hidden lg:inline-flex"
@@ -285,7 +287,7 @@ export function Dock() {
               {Math.round(zoomScale * 100)}%
             </button>
             {zoomOpen && (
-              <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 rounded-xl border border-neutral-800 bg-neutral-950 py-1 shadow-xl">
+              <div className="wall-dock-popover absolute bottom-full left-1/2 z-[1] mb-2 -translate-x-1/2 rounded-xl border border-neutral-800 bg-neutral-950 py-1 shadow-xl">
                 {ZOOM_STEPS.map((z) => (
                   <button
                     key={z}

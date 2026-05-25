@@ -1,16 +1,18 @@
 import type { ProviderResult } from '@/providers/types'
-import { searchCatalogWidgets } from '@/widgets/catalog'
+import { searchCatalogWidgets, WIDGET_CATALOG } from '@/widgets/catalog'
 
-export async function searchWidgets(query: string): Promise<ProviderResult | null> {
+const LIBRARY_LABEL = `Library · ${WIDGET_CATALOG.length} widgets`
+
+export async function searchWidgets(query: string, browse = false): Promise<ProviderResult | null> {
   const q = query.trim()
   const matches = searchCatalogWidgets(q)
-  if (matches.length === 0 && q.length < 2) {
+  if (matches.length === 0 && q.length < 2 && !browse) {
     return {
       section: {
         id: 'widgets',
         title: 'Widgets',
-        source: 'Library · 100 widgets',
-        items: searchCatalogWidgets('').slice(0, 8).map((w) => ({
+        source: LIBRARY_LABEL,
+        items: searchCatalogWidgets('').slice(0, 18).map((w) => ({
           id: w.id,
           kind: 'widget' as const,
           title: w.name,
@@ -29,8 +31,8 @@ export async function searchWidgets(query: string): Promise<ProviderResult | nul
     section: {
       id: 'widgets',
       title: 'Widgets',
-      source: 'Library · 100 widgets',
-      items: matches.slice(0, 8).map((w) => ({
+      source: LIBRARY_LABEL,
+      items: matches.slice(0, 18).map((w) => ({
         id: w.id,
         kind: 'widget' as const,
         title: w.name,
@@ -39,7 +41,7 @@ export async function searchWidgets(query: string): Promise<ProviderResult | nul
         source: 'Library',
         payload: { catalogId: w.id },
       })),
-      more: matches.length > 8,
+      more: matches.length > 18,
     },
   }
 }

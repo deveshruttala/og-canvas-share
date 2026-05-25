@@ -1,5 +1,6 @@
-import { useEffect, useMemo } from 'react'
-import { Search } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import { Search, X } from 'lucide-react'
 import { useOmniStore, flattenOmniItems, getOmniPlaceholders } from '@/store/omni.store'
 import { modKeyLabel } from '@/lib/platform'
 import { cn } from '@/lib/cn'
@@ -15,6 +16,7 @@ export function OmniBar({ variant = 'floating' }: Props) {
   const query = useOmniStore((s) => s.query)
   const setOpen = useOmniStore((s) => s.setOpen)
   const setQuery = useOmniStore((s) => s.setQuery)
+  const filter = useOmniStore((s) => s.filter)
   const placeholderIdx = useOmniStore((s) => s.placeholderIdx)
   const tickPlaceholder = useOmniStore((s) => s.tickPlaceholder)
   const sections = useOmniStore((s) => s.sections)
@@ -22,24 +24,63 @@ export function OmniBar({ variant = 'floating' }: Props) {
   const setActiveIndex = useOmniStore((s) => s.setActiveIndex)
   const loading = useOmniStore((s) => s.loading)
 
-  const placeholders = getOmniPlaceholders()
+  const placeholders = getOmniPlaceholders(filter)
   const flat = useMemo(() => flattenOmniItems(sections), [sections])
   const inline = variant === 'inline'
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const closeSearch = useCallback(() => {
+    setOpen(false)
+    setQuery('')
+    setActiveIndex(0)
+  }, [setOpen, setQuery, setActiveIndex])
 
   useEffect(() => {
     const id = window.setInterval(tickPlaceholder, 4000)
     return () => window.clearInterval(id)
   }, [tickPlaceholder])
 
+  useEffect(() => {
+    if (!inline) return
+    document.body.classList.toggle('wall-omni-search-open', open)
+    return () => document.body.classList.remove('wall-omni-search-open')
+  }, [open, inline])
+
+  useEffect(() => {
+    if (!inline || !open) return
+    const onDocPointer = (e: MouseEvent) => {
+      const root = inputRef.current?.closest('.omni-bar-root')
+      if (root && !root.contains(e.target as Node)) closeSearch()
+    }
+    document.addEventListener('mousedown', onDocPointer)
+    return () => document.removeEventListener('mousedown', onDocPointer)
+  }, [open, inline, closeSearch])
+
+  const resultsPanel = open ? (
+    <OmniResults
+      sections={sections}
+      loading={loading}
+      activeIndex={activeIndex}
+      onSelectIndex={setActiveIndex}
+      onClose={closeSearch}
+    />
+  ) : null
+
   return (
     <div className={cn('omni-bar-root', inline && 'omni-bar-root-inline', open && 'omni-bar-root-open')}>
       <div className="omni-bar-shell">
         <Search className="omni-bar-icon h-4 w-4 shrink-0" aria-hidden />
         <input
+          ref={inputRef}
           type="search"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => setOpen(true)}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            if (e.target.value.trim()) setOpen(true)
+          }}
+          onFocus={() => {
+            setOpen(true)
+          }}
           onKeyDown={(e) => {
             if (e.key === 'ArrowDown') {
               e.preventDefault()
@@ -51,30 +92,48 @@ export function OmniBar({ variant = 'floating' }: Props) {
             }
             if (e.key === 'Enter' && flat[activeIndex]) {
               e.preventDefault()
-              void insertOmniItem(flat[activeIndex]).then(() => {
-                setOpen(false)
-                setQuery('')
-              })
+              void insertOmniItem(flat[activeIndex]).then(() => closeSearch())
             }
-            if (e.key === 'Escape') setOpen(false)
+            if (e.key === 'Escape') {
+              e.preventDefault()
+              closeSearch()
+            }
           }}
-          placeholder={inline ? 'Search images, GIFs, widgets, links…' : placeholders[placeholderIdx]}
+          placeholder={inline ? placeholders[0] : placeholders[placeholderIdx]}
           className="omni-bar-input flex-1"
           aria-label="Universal search"
           aria-expanded={open}
         />
-        <kbd className="omni-bar-kbd hidden lg:inline">{modKeyLabel()}K</kbd>
+        {open ? (
+          <button
+            type="button"
+            className="omni-bar-close"
+            aria-label="Close search"
+            onClick={closeSearch}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        ) : (
+          <kbd className="omni-bar-kbd hidden lg:inline">{modKeyLabel()}K</kbd>
+        )}
       </div>
 
-      {open && (
-        <OmniResults
-          sections={sections}
-          loading={loading}
-          activeIndex={activeIndex}
-          onSelectIndex={setActiveIndex}
-          onClose={() => setOpen(false)}
-        />
-      )}
+      {open && inline && resultsPanel}
+
+      {open &&
+        inline &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <button
+            type="button"
+            className="omni-search-backdrop"
+            aria-label="Close search"
+            onClick={closeSearch}
+          />,
+          document.body,
+        )}
+
+      {open && !inline && resultsPanel}
     </div>
   )
 }

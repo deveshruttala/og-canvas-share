@@ -2,7 +2,7 @@
  * Floating inspector HUD — rotation, layers, lock, delete, gradients & borders.
  */
 import { useEffect, useState } from 'react'
-import { Lock, Unlock, ArrowDown, Link2, Palette, ExternalLink, Rocket } from 'lucide-react'
+import { Lock, Unlock, ArrowDown, Link2, Palette, ExternalLink, Rocket, Type } from 'lucide-react'
 import { useEditor, useValue } from '@tldraw/editor'
 import { WALL_FRAME_ID } from '@/editor/wall-editor-api'
 import { getWallShapeKind, getWallShapeLabel, wallActions } from '@/editor/wall-actions'
@@ -15,24 +15,16 @@ import {
   readWallTextBoxStyle,
   SIZE_OPTIONS,
   STICKY_COLOR_HEX,
+  TEXT_ALIGN_OPTIONS,
   TEXT_COLOR_OPTIONS,
+  TEXT_COLOR_SWATCH,
+  TEXT_STYLE_PRESETS,
   type WallTextDisplayMode,
 } from '@/lib/wall-text-style'
+import { WALL_BORDER_PRESETS, WALL_GRADIENT_PRESETS } from '@/lib/wall-style-presets'
 import { cn } from '@/lib/cn'
-
-const GRADIENTS = [
-  { id: 'midnight-neon', label: 'Midnight Neon', css: 'linear-gradient(135deg,#0f172a,#1e1b4b,#beee1d33)' },
-  { id: 'toxic-cyan', label: 'Toxic Cyan', css: 'linear-gradient(135deg,#042f2e,#06b6d4,#22d3ee)' },
-  { id: 'poison-gold', label: 'Poison Gold', css: 'linear-gradient(135deg,#422006,#eab308,#facc15)' },
-  { id: 'purple-haze', label: 'Purple Haze', css: 'linear-gradient(135deg,#2e1065,#7c3aed,#c084fc)' },
-] as const
-
-const BORDERS = [
-  { id: 'solid', label: 'Solid', dash: 'draw' as const },
-  { id: 'dashed', label: 'Dashed', dash: 'dashed' as const },
-  { id: 'dotted', label: 'Dotted', dash: 'dotted' as const },
-  { id: 'draw', label: 'Retro', dash: 'solid' as const },
-]
+import { toJsonMeta } from '@/lib/json-meta'
+import { startWallTextEditing } from '@/editor/wall-text-editing'
 
 export function WallInspector() {
   const editor = useEditor()
@@ -121,7 +113,7 @@ export function WallInspector() {
         editor.updateShape({
           id,
           type: shape.type,
-          meta: { ...shape.meta, ...patch } as typeof shape.meta,
+          meta: toJsonMeta({ ...(shape.meta as Record<string, unknown>), ...patch }),
         })
       }
     })
@@ -218,6 +210,18 @@ export function WallInspector() {
           />
         </label>
 
+        {isTextContent && !multiSelected && (
+          <button
+            type="button"
+            className="wall-inspector-btn wall-inspector-btn-primary"
+            title="Edit text (Enter)"
+            onClick={() => startWallTextEditing(editor, primary.id, { selectAll: false })}
+          >
+            <Type className="h-3.5 w-3.5" />
+            Edit text
+          </button>
+        )}
+
         <button
           type="button"
           className="wall-inspector-btn wall-inspector-btn-primary"
@@ -309,7 +313,7 @@ export function WallInspector() {
             <div className="wall-inspector-tray-section">
               <p className="wall-inspector-tray-title">Neon gradients</p>
               <div className="flex flex-wrap gap-2">
-                {GRADIENTS.map((g) => (
+                {WALL_GRADIENT_PRESETS.map((g) => (
                   <button
                     key={g.id}
                     type="button"
@@ -330,7 +334,7 @@ export function WallInspector() {
             <div className="wall-inspector-tray-section">
               <p className="wall-inspector-tray-title">Border</p>
               <div className="flex flex-wrap gap-1.5">
-                {BORDERS.map((b) => (
+                {WALL_BORDER_PRESETS.map((b) => (
                   <button
                     key={b.id}
                     type="button"
@@ -486,6 +490,22 @@ export function WallInspector() {
           {isTextContent && textStyle && (
             <>
               <div className="wall-inspector-tray-section">
+                <p className="wall-inspector-tray-title">Quick styles</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {TEXT_STYLE_PRESETS.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className="rounded-lg bg-white/5 px-2 py-1 text-[10px] font-bold text-neutral-300 hover:bg-[#beee1d]/20 hover:text-[#beee1d]"
+                      onClick={() => wallActions.applyTextStylePreset(selection.ids, p.id)}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="wall-inspector-tray-section">
                 <p className="wall-inspector-tray-title">Display</p>
                 <div className="flex flex-wrap gap-1.5">
                   {(
@@ -519,6 +539,7 @@ export function WallInspector() {
                     <button
                       key={f.id}
                       type="button"
+                      title={f.hint}
                       className={cn(
                         'rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase',
                         textStyle.font === f.id
@@ -546,9 +567,33 @@ export function WallInspector() {
                           ? 'bg-[#beee1d] text-black'
                           : 'bg-white/5 text-neutral-400',
                       )}
+                      title={s.hint}
                       onClick={() => wallActions.updateTextBoxTypography(selection.ids, { size: s.id })}
                     >
                       {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="wall-inspector-tray-section">
+                <p className="wall-inspector-tray-title">Alignment</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {TEXT_ALIGN_OPTIONS.map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      className={cn(
+                        'rounded-lg px-3 py-1 text-[10px] font-bold',
+                        textStyle.textAlign === a.id
+                          ? 'bg-[#beee1d] text-black'
+                          : 'bg-white/5 text-neutral-400',
+                      )}
+                      onClick={() =>
+                        wallActions.updateTextBoxTypography(selection.ids, { textAlign: a.id })
+                      }
+                    >
+                      {a.label}
                     </button>
                   ))}
                 </div>
@@ -567,26 +612,7 @@ export function WallInspector() {
                         textStyle.color === c.id ? 'border-[#beee1d]' : 'border-white/15',
                         c.id === 'white' && 'ring-1 ring-neutral-600',
                       )}
-                      style={{
-                        background:
-                          c.id === 'black'
-                            ? '#1a1814'
-                            : c.id === 'grey'
-                              ? '#94a3b8'
-                              : c.id === 'white'
-                                ? '#ffffff'
-                                : c.id === 'red'
-                                  ? '#ef4444'
-                                  : c.id === 'orange'
-                                    ? '#f97316'
-                                    : c.id === 'yellow'
-                                      ? '#eab308'
-                                      : c.id === 'green'
-                                        ? '#22c55e'
-                                        : c.id === 'blue'
-                                          ? '#3b82f6'
-                                          : '#8b5cf6',
-                      }}
+                      style={{ background: TEXT_COLOR_SWATCH[c.id] }}
                       onClick={() => wallActions.updateTextBoxTypography(selection.ids, { color: c.id })}
                     />
                   ))}
@@ -614,13 +640,13 @@ export function WallInspector() {
                             editor.updateShape({
                               id,
                               type: shape.type,
-                              meta: {
-                                ...shape.meta,
+                              meta: toJsonMeta({
+                                ...(shape.meta as Record<string, unknown>),
                                 wallTextBox: {
                                   ...readWallTextBoxStyle(shape.meta as Record<string, unknown>),
                                   cardBg: bg.css,
                                 },
-                              },
+                              }),
                             })
                           }
                         }}
@@ -654,13 +680,13 @@ export function WallInspector() {
                               editor.updateShape({
                                 id,
                                 type: shape.type,
-                                meta: {
-                                  ...shape.meta,
+                                meta: toJsonMeta({
+                                  ...(shape.meta as Record<string, unknown>),
                                   wallTextBox: {
                                     ...readWallTextBoxStyle(shape.meta as Record<string, unknown>),
                                     stickyColor: color,
                                   },
-                                },
+                                }),
                               })
                             }
                           }}

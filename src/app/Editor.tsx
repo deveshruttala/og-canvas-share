@@ -3,7 +3,7 @@
  */
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Share2, Sparkles, Undo2, Redo2, LayoutGrid } from 'lucide-react'
+import { Share2, Sparkles } from 'lucide-react'
 import { WallTldrawEditor } from '@/editor/WallTldrawEditor'
 import { Dock } from '@/ui/Dock'
 import { HelpOverlay } from '@/ui/HelpOverlay'
@@ -15,16 +15,19 @@ import { loadCanvas } from '@/persist/db'
 import { wallCanvasId } from '@/persist/constants'
 import { createEmptyCanvas } from '@/types/canvas'
 import { handleTldrawPaste } from '@/lib/paste-handler'
-import { getWallEditor, onHistoryChange } from '@/editor/wall-editor-api'
+import { getWallEditor } from '@/editor/wall-editor-api'
 import { wallActions } from '@/editor/wall-actions'
+import {
+  isCanvasTypingTarget,
+  isEditingWallText,
+  startWallTextEditing,
+} from '@/editor/wall-text-editing'
 import { DrawBrushPanel } from '@/editor/DrawBrushPanel'
 import { SessionTimeline } from '@/editor/SessionTimeline'
 import { useOmniStore } from '@/store/omni.store'
 import { trackOmniCursor } from '@/lib/omni-cursor'
 import '@/styles/omni-bar.css'
 import '@/styles/editor-chrome.css'
-import toast from 'react-hot-toast'
-
 const ShareModal = lazy(() => import('@/ui/ShareModal').then((m) => ({ default: m.ShareModal })))
 const CommandPalette = lazy(() => import('@/ui/CommandPalette').then((m) => ({ default: m.CommandPalette })))
 const AddPicker = lazy(() => import('@/ui/AddPicker').then((m) => ({ default: m.AddPicker })))
@@ -60,8 +63,6 @@ export function Editor() {
   const fetchMe = useAuthStore((s) => s.fetchMe)
   const logout = useAuthStore((s) => s.logout)
 
-  const [canUndo, setCanUndo] = useState(false)
-  const [canRedo, setCanRedo] = useState(false)
   const [canvasReady, setCanvasReady] = useState(false)
 
   useEffect(() => {
@@ -86,17 +87,6 @@ export function Editor() {
   }, [user, hydrate])
 
   useEffect(() => {
-    const refresh = () => {
-      const u = wallActions.canUndo()
-      const r = wallActions.canRedo()
-      setCanUndo((prev) => (prev === u ? prev : u))
-      setCanRedo((prev) => (prev === r ? prev : r))
-    }
-    refresh()
-    return onHistoryChange(refresh)
-  }, [hydrated])
-
-  useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName
       if (tag === 'TEXTAREA' || tag === 'INPUT') return
@@ -111,18 +101,22 @@ export function Editor() {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey
-      const tag = (e.target as HTMLElement)?.tagName
-      const typing = tag === 'TEXTAREA' || tag === 'INPUT'
+      const typing = isCanvasTypingTarget(e.target)
+      const editingText = isEditingWallText(getWallEditor())
 
       if (mod && e.key === 'k') {
         e.preventDefault()
-        useOmniStore.getState().setOpen(true)
+        const omni = useOmniStore.getState()
+        omni.setOpen(true)
+        requestAnimationFrame(() => {
+          document.querySelector<HTMLInputElement>('.omni-bar-input')?.focus()
+        })
       }
       if (mod && e.key === 's') {
         e.preventDefault()
         void persist()
       }
-      if (mod && e.key === 'z' && !typing) {
+      if (mod && e.key === 'z' && !typing && !editingText) {
         e.preventDefault()
         if (e.shiftKey) wallActions.redo()
         else wallActions.undo()
@@ -132,17 +126,27 @@ export function Editor() {
         setShowHelpOverlay(true)
       }
       if (e.key === 'Escape') {
+        useOmniStore.getState().setOpen(false)
+        useOmniStore.getState().setQuery('')
         useUiStore.getState().setShowHelpOverlay(false)
         useUiStore.getState().setShowShareModal(false)
         useUiStore.getState().setShowCommandPalette(false)
         useUiStore.getState().setShowAiPanel(false)
         useUiStore.getState().setShowConnections(false)
       }
-      if ((e.key === 'Backspace' || e.key === 'Delete') && !typing) {
+      if ((e.key === 'Backspace' || e.key === 'Delete') && !typing && !editingText) {
         try {
           wallActions.deleteSelected()
         } catch {
           /* editor not ready */
+        }
+      }
+      if (e.key === 'Enter' && !typing && !editingText && !mod) {
+        const editor = getWallEditor()
+        const only = editor?.getOnlySelectedShape()
+        if (only && (only.type === 'text' || only.type === 'note') && editor?.canEditShape(only)) {
+          e.preventDefault()
+          startWallTextEditing(editor, only.id)
         }
       }
       if (e.key === 'Home' && !typing) {
@@ -171,55 +175,26 @@ export function Editor() {
 
   return (
     <div className="wall-editor-shell relative flex h-[100dvh] flex-col">
-      <header className="wall-editor-header relative z-40 flex shrink-0 flex-col gap-3 px-4 py-3 sm:px-6 pt-[calc(0.75rem+env(safe-area-inset-top))]">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <Link to="/" className="wall-editor-title flex shrink-0 items-center gap-1.5 text-lg font-black">
-              <span className="text-xl">🧱</span> WALL
-            </Link>
-            <span className="hidden text-white/15 sm:inline">|</span>
-            <input
-              type="text"
-              value={wallTitle}
-              onChange={(e) => setTitle(e.target.value)}
-              className="min-w-0 max-w-[140px] truncate border-b border-transparent bg-transparent text-xs font-extrabold uppercase tracking-wider text-white outline-none transition hover:border-white/10 focus:border-[#beee1d] sm:max-w-[200px] sm:text-sm"
-            />
-          </div>
+      <header className="wall-editor-header relative z-40 flex shrink-0 items-center gap-2 border-b border-white/5 px-3 py-2 sm:gap-3 sm:px-4 pt-[calc(0.5rem+env(safe-area-inset-top))]">
+        <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
+          <Link to="/" className="wall-editor-title flex shrink-0 items-center gap-1.5 text-base font-black sm:text-lg">
+            <span className="text-lg sm:text-xl">🧱</span>
+            <span className="hidden sm:inline">WALL</span>
+          </Link>
+          <span className="hidden text-white/15 md:inline">|</span>
+          <input
+            type="text"
+            value={wallTitle}
+            onChange={(e) => setTitle(e.target.value)}
+            className="hidden min-w-0 max-w-[100px] truncate border-b border-transparent bg-transparent text-xs font-extrabold uppercase tracking-wider text-white outline-none transition hover:border-white/10 focus:border-[#beee1d] sm:block sm:max-w-[140px] md:max-w-[180px]"
+          />
+        </div>
 
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <div className="hidden items-center gap-0.5 rounded-full border border-white/5 bg-black/40 p-1 lg:flex">
-            <button
-              type="button"
-              title="Undo"
-              disabled={!canUndo}
-              onClick={() => wallActions.undo()}
-              className="rounded-full p-2 text-white transition hover:bg-white/5 disabled:opacity-30"
-            >
-              <Undo2 className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              title="Redo"
-              disabled={!canRedo}
-              onClick={() => wallActions.redo()}
-              className="rounded-full p-2 text-white transition hover:bg-white/5 disabled:opacity-30"
-            >
-              <Redo2 className="h-4 w-4" />
-            </button>
-            <span className="px-1 text-white/10">|</span>
-            <button
-              type="button"
-              onClick={() => {
-                wallActions.autoArrange()
-                toast.success('Layout arranged!')
-              }}
-              className="flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#beee1d]/10 hover:text-[#beee1d]"
-            >
-              <LayoutGrid className="h-3.5 w-3.5" />
-              Auto-Arrange
-            </button>
-          </div>
+        <div className="wall-search-row min-w-0 flex-1">
+          <OmniBar variant="inline" />
+        </div>
 
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <button
             type="button"
             onClick={() => {
@@ -229,33 +204,39 @@ export function Editor() {
               }
               setShowAiPanel(true)
             }}
-            className="wall-btn-ai hidden items-center gap-2 px-3 py-2 text-xs font-bold sm:flex"
+            className="wall-btn-ai hidden items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold md:flex"
+            title="AI Copilot"
           >
             <Sparkles className="h-3.5 w-3.5 text-[#beee1d]" />
-            AI Copilot
+            <span className="hidden lg:inline">AI</span>
           </button>
 
-          <button type="button" onClick={() => setShowShareModal(true)} className="wall-btn-neon flex items-center gap-1.5 px-4 py-2 text-xs">
+          <button
+            type="button"
+            onClick={() => setShowShareModal(true)}
+            className="wall-btn-neon flex items-center gap-1 px-3 py-1.5 text-xs sm:px-4 sm:py-2"
+          >
             <Share2 className="h-3.5 w-3.5" />
-            Share
+            <span className="hidden sm:inline">Share</span>
           </button>
 
           {user ? (
-            <button type="button" onClick={logout} className="hidden text-xs text-neutral-500 hover:text-white sm:inline">
-              Log out ({user.username})
+            <button
+              type="button"
+              onClick={logout}
+              className="hidden text-[10px] text-neutral-500 hover:text-white xl:inline"
+            >
+              Log out
             </button>
           ) : null}
 
-          <span className="hidden text-[10px] text-neutral-600 lg:inline">
+          <span className="hidden text-[10px] text-neutral-600 2xl:inline">
             {saveStatus === 'saving' ? 'Saving…' : 'Saved'}
           </span>
         </div>
-        </div>
-
-        <OmniBar variant="inline" />
       </header>
 
-      <div className="relative min-h-0 flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
+      <div className="wall-editor-stage relative min-h-0 flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
         <WallTldrawEditor />
         <DrawBrushPanel />
         <SessionTimeline />

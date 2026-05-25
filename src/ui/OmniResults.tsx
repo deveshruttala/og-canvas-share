@@ -2,10 +2,12 @@ import { useMemo } from 'react'
 import { Loader2, Plus } from 'lucide-react'
 import type { OmniSection } from '@/providers/types'
 import { flattenOmniItems, useOmniStore } from '@/store/omni.store'
+import { OMNI_SEARCH_FILTERS, OMNI_SECTION_HELP } from '@/lib/omni-catalog'
+import { WIDGET_CATALOG } from '@/widgets/catalog'
 import { insertOmniItem } from '@/lib/omni-insert'
 import { useUiStore } from '@/store/ui.store'
 import { cn } from '@/lib/cn'
-import { displayAssetUrl } from '@/lib/asset-proxy'
+import { OmniThumb } from '@/ui/OmniThumb'
 
 type Props = {
   sections: OmniSection[]
@@ -15,9 +17,45 @@ type Props = {
   onClose: () => void
 }
 
+function OmniFilterTabs() {
+  const filter = useOmniStore((s) => s.filter)
+  const setFilter = useOmniStore((s) => s.setFilter)
+  const setOpen = useOmniStore((s) => s.setOpen)
+
+  return (
+    <div className="omni-filter-row omni-filter-row-panel" role="tablist" aria-label="Search category">
+      {OMNI_SEARCH_FILTERS.map((f) => (
+        <button
+          key={f.id}
+          type="button"
+          role="tab"
+          aria-selected={filter === f.id}
+          title={f.hint}
+          className={cn('omni-filter-chip', filter === f.id && 'omni-filter-chip-active')}
+          onClick={() => {
+            setFilter(f.id)
+            setOpen(true)
+          }}
+        >
+          <span aria-hidden>{f.emoji}</span> {f.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export function OmniResults({ sections, loading, activeIndex, onSelectIndex, onClose }: Props) {
+  const filter = useOmniStore((s) => s.filter)
   const flat = useMemo(() => flattenOmniItems(sections), [sections])
-  let cursor = 0
+  const sectionStarts = useMemo(() => {
+    const starts: number[] = []
+    let offset = 0
+    for (const section of sections) {
+      starts.push(offset)
+      offset += section.items.length
+    }
+    return starts
+  }, [sections])
 
   const pick = async (idx: number) => {
     const item = flat[idx]
@@ -31,8 +69,11 @@ export function OmniResults({ sections, loading, activeIndex, onSelectIndex, onC
   if (!sections.length && !loading) {
     return (
       <div className="omni-results-panel">
-        <p className="px-4 py-8 text-center text-sm text-white/45">
-          Type to search images, GIFs, audio, emojis, widgets, and links…
+        <OmniFilterTabs />
+        <p className="px-4 py-6 text-center text-sm text-white/50">
+          {filter === 'all'
+            ? 'Pick a category above or type to search images, GIFs, audio, emojis, widgets, and links.'
+            : `Type to search ${filter}, or browse popular results when the field is empty.`}
         </p>
         <button
           type="button"
@@ -42,7 +83,7 @@ export function OmniResults({ sections, loading, activeIndex, onSelectIndex, onC
             useUiStore.getState().setShowWidgetPicker(true)
           }}
         >
-          Browse widget library (100 widgets) →
+          Browse widget library ({WIDGET_CATALOG.length} widgets) →
         </button>
       </div>
     )
@@ -50,16 +91,25 @@ export function OmniResults({ sections, loading, activeIndex, onSelectIndex, onC
 
   return (
     <div className="omni-results-panel">
-      {sections.map((section) => {
-        const startIdx = cursor
-        cursor += section.items.length
+      <OmniFilterTabs />
+      {sections.map((section, sectionIndex) => {
+        const startIdx = sectionStarts[sectionIndex] ?? 0
         return (
           <section key={section.id} className="omni-results-section">
             <header className="omni-results-section-head">
-              <span>▸ {section.title}</span>
-              <span className="text-[var(--text-tertiary)]">
+              <div className="min-w-0">
+                <span className="block font-semibold">
+                  ▸ {OMNI_SECTION_HELP[section.id]?.title ?? section.title}
+                </span>
+                {OMNI_SECTION_HELP[section.id]?.description && (
+                  <span className="mt-0.5 block text-[10px] font-normal text-white/40">
+                    {OMNI_SECTION_HELP[section.id].description}
+                  </span>
+                )}
+              </div>
+              <span className="shrink-0 text-right text-[var(--text-tertiary)]">
                 {section.source}
-                {section.more ? ' · see all →' : ''}
+                {section.more ? ' · more' : ''}
               </span>
             </header>
 
@@ -85,9 +135,7 @@ export function OmniResults({ sections, loading, activeIndex, onSelectIndex, onC
                       onMouseEnter={() => onSelectIndex(idx)}
                       onClick={() => void pick(idx)}
                     >
-                      {item.thumb && (
-                        <img src={displayAssetUrl(item.thumb)} alt="" loading="lazy" />
-                      )}
+                      {item.thumb ? <OmniThumb src={item.thumb} alt={item.title} /> : null}
                       <span className="omni-thumb-add">
                         <Plus className="h-3 w-3" />
                       </span>

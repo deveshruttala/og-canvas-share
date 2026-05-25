@@ -8,7 +8,12 @@ import {
   setTextDisplayMode,
   updateTextTypography,
 } from '@/editor/wall-text-actions'
-import type { WallTextBoxStyle } from '@/lib/wall-text-style'
+import { startWallTextEditing } from '@/editor/wall-text-editing'
+import {
+  readWallTextBoxStyle,
+  TEXT_STYLE_PRESETS,
+  type WallTextBoxStyle,
+} from '@/lib/wall-text-style'
 import { AssetRecordType } from '@tldraw/tlschema'
 import {
   getWallEditor,
@@ -21,6 +26,7 @@ import { createWallLinkShape, wallHostGeoProps } from '@/editor/wall-host-shape'
 import { detectLinkPlatform, getEmbedUrl } from '@/lib/link-resolver'
 import { blobToDataUrl, compressImage, probeImageSize } from '@/lib/compress-image'
 import { fetchExternalAssetAsDataUrl, isRemoteHttpUrl } from '@/lib/asset-proxy'
+import { toJsonMeta } from '@/lib/json-meta'
 import type { CatalogWidget } from '@/widgets/catalog'
 
 export type LinkTo = {
@@ -142,9 +148,22 @@ export const wallActions = {
   addTextBox(text = 'Type here', x?: number, y?: number, style?: Partial<WallTextBoxStyle>) {
     const { x: px, y: py } = place(x, y)
     const editor = ed()
-    const id = createTextBoxShape(editor, { x: px - 20, y: py - 16, text, style })
+    const boxW = 320
+    const id = createTextBoxShape(editor, {
+      x: px - boxW / 2,
+      y: py - 28,
+      text,
+      style,
+    })
     editor.select(id)
     editor.setCurrentTool('select')
+    requestAnimationFrame(() => {
+      const bounds = editor.getShapePageBounds(id)
+      if (bounds) {
+        editor.centerOnPoint({ x: bounds.x + bounds.w / 2, y: bounds.y + bounds.h / 2 })
+      }
+      startWallTextEditing(editor, id, { selectAll: true })
+    })
   },
 
   /** @deprecated Use addTextBox — kept for explicit sticky notes */
@@ -159,6 +178,7 @@ export const wallActions = {
     const id = createStickyNoteShape(editor, { x: px, y: py, text, color })
     editor.select(id)
     editor.setCurrentTool('select')
+    requestAnimationFrame(() => startWallTextEditing(editor, id, { selectAll: true }))
   },
 
   addTextBlock(text = 'Heading', size: 's' | 'm' | 'l' | 'xl' = 'l', x?: number, y?: number) {
@@ -174,6 +194,40 @@ export const wallActions = {
     patch: Parameters<typeof updateTextTypography>[2],
   ) {
     updateTextTypography(ed(), shapeIds, patch)
+  },
+
+  applyTextStylePreset(shapeIds: string[], presetId: string) {
+    const preset = TEXT_STYLE_PRESETS.find((p) => p.id === presetId)
+    if (!preset) return
+    const { mode, cardBg, stickyColor, ...typography } = preset.style
+    updateTextTypography(ed(), shapeIds, typography)
+    if (mode) {
+      for (const id of shapeIds) {
+        setTextDisplayMode(ed(), id, mode, preset.style)
+      }
+      return
+    }
+    if (cardBg || stickyColor) {
+      const editor = ed()
+      editor.run(() => {
+        for (const id of shapeIds) {
+          const shape = editor.getShape(id as never)
+          if (!shape) continue
+          editor.updateShape({
+            id: shape.id,
+            type: shape.type,
+            meta: toJsonMeta({
+              ...(shape.meta as Record<string, unknown>),
+              wallTextBox: {
+                ...readWallTextBoxStyle(shape.meta as Record<string, unknown>),
+                ...(cardBg ? { cardBg } : {}),
+                ...(stickyColor ? { stickyColor } : {}),
+              },
+            }),
+          })
+        }
+      })
+    }
   },
 
   async addImageFromFile(file: File) {
@@ -218,7 +272,7 @@ export const wallActions = {
       type: 'text',
       x: px,
       y: py,
-      meta: linkTo ? { linkTo } : {},
+      meta: linkTo ? toJsonMeta({ linkTo }) : {},
       props: {
         richText: toRichText(emoji),
         color: 'black',
@@ -305,7 +359,7 @@ export const wallActions = {
       y: y - 60,
       opacity: 0.001,
       props: wallHostGeoProps(320, 120),
-      meta: { wallType: 'audio', wallData: { src, title: title ?? file.name } },
+      meta: toJsonMeta({ wallType: 'audio', wallData: { src, title: title ?? file.name } }),
     })
   },
 
@@ -319,7 +373,7 @@ export const wallActions = {
       y: py - size / 2,
       opacity: 0.001,
       props: wallHostGeoProps(size, size),
-      meta: { wallType: 'qr', wallData: { url } },
+      meta: toJsonMeta({ wallType: 'qr', wallData: { url } }),
     })
   },
 
@@ -338,7 +392,7 @@ export const wallActions = {
       y: py - h / 2,
       opacity: 0.001,
       props: wallHostGeoProps(w, h),
-      meta: { wallType: 'widget', wallData: { type, ...extra } },
+      meta: toJsonMeta({ wallType: 'widget', wallData: { type, ...extra } }),
     })
   },
 
@@ -502,7 +556,7 @@ export const wallActions = {
   async addGifAt(url: string, x?: number, y?: number) {
     const { x: px, y: py } = place(x, y)
     let src = url
-    let mimeType = 'image/gif'
+    const mimeType = 'image/gif'
     if (isRemoteHttpUrl(url)) {
       try {
         src = await fetchExternalAssetAsDataUrl(url)
@@ -612,7 +666,7 @@ export const wallActions = {
       y: py - 70,
       opacity: 0.001,
       props: wallHostGeoProps(320, 140),
-      meta: { wallType: 'progress', wallData: { title, current, max, color } },
+      meta: toJsonMeta({ wallType: 'progress', wallData: { title, current, max, color } }),
     })
   },
 
@@ -625,7 +679,7 @@ export const wallActions = {
       y: py - 90,
       opacity: 0.001,
       props: wallHostGeoProps(240, 180),
-      meta: { wallType: 'soundpad', wallData: { label, frequency, wave } },
+      meta: toJsonMeta({ wallType: 'soundpad', wallData: { label, frequency, wave } }),
     })
   },
 
@@ -638,7 +692,7 @@ export const wallActions = {
       y: py - 140,
       opacity: 0.001,
       props: wallHostGeoProps(220, 280),
-      meta: { wallType: 'polaroid', wallData: { src, caption } },
+      meta: toJsonMeta({ wallType: 'polaroid', wallData: { src, caption } }),
     })
   },
 
@@ -681,7 +735,7 @@ export const wallActions = {
       y: py - 60,
       opacity: 0.001,
       props: wallHostGeoProps(320, 120),
-      meta: {
+      meta: toJsonMeta({
         wallType: 'audio',
         wallData: {
           src: data.src,
@@ -690,7 +744,7 @@ export const wallActions = {
           cover: data.cover,
           badge: data.badge ?? 'Audio',
         },
-      },
+      }),
     })
   },
 
@@ -764,10 +818,10 @@ export const wallActions = {
     const editor = ed()
     const shape = editor.getShape(shapeId as never)
     if (!shape) return
-    const meta = { ...shape.meta }
-    if (linkTo) meta.linkTo = linkTo
-    else delete meta.linkTo
-    editor.updateShape({ id: shape.id, type: shape.type, meta: meta as typeof shape.meta })
+    const next = { ...(shape.meta as Record<string, unknown>) }
+    if (linkTo) next.linkTo = linkTo
+    else delete next.linkTo
+    editor.updateShape({ id: shape.id, type: shape.type, meta: toJsonMeta(next) })
   },
 
   setSelectionLink(url: string, label?: string) {

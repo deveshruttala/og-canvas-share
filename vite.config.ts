@@ -9,8 +9,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/openverse-api': {
-        target: 'https://api.openverse.engineering',
+        target: 'https://api.openverse.org',
         changeOrigin: true,
+        followRedirects: true,
         rewrite: (path) => path.replace(/^\/openverse-api/, ''),
       },
       '/microlink-api': {

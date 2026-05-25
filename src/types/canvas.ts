@@ -29,6 +29,17 @@ export type ThemeId =
   | 'cream'
   | 'sky'
   | 'forest'
+  | 'paper'
+  | 'galaxy'
+  | 'cyber'
+  | 'coral'
+  | 'zen'
+  | 'apricot'
+  | 'terracotta'
+  | 'arctic'
+  | 'blossom'
+  | 'comic'
+  | 'espresso'
 
 export type ElementType =
   | 'text'

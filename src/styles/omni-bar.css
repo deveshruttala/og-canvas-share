@@ -1,4 +1,4 @@
-/** OmniBar — dark inline search in editor header + optional floating mode */
+/** OmniBar — inline search in editor header + optional floating mode */
 .omni-bar-root {
   pointer-events: none;
   position: fixed;
@@ -14,7 +14,7 @@
   position: relative;
   top: auto;
   left: auto;
-  z-index: 50;
+  z-index: 1;
   width: 100%;
   max-width: none;
   transform: none;
@@ -25,7 +25,47 @@
 }
 
 .omni-bar-root-inline.omni-bar-root-open {
-  z-index: 70;
+  z-index: 3;
+}
+
+body.wall-omni-search-open .wall-editor-header {
+  z-index: 200;
+}
+
+/* Dim canvas only — header + search stay clear */
+.omni-search-backdrop {
+  position: fixed;
+  top: var(--wall-header-height, 4rem);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 150;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: default;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+  animation: omni-backdrop-in 0.15s ease-out;
+}
+
+@keyframes omni-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.omni-bar-root-inline .omni-results-panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin-top: 0;
+  max-height: min(480px, calc(100vh - var(--wall-header-height, 4rem) - 5rem));
 }
 
 .omni-bar-shell {
@@ -58,6 +98,22 @@
   color: rgba(255, 255, 255, 0.35);
 }
 
+.omni-bar-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.55);
+  transition: background 0.12s, color 0.12s;
+}
+
+.omni-bar-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fafafa;
+}
+
 .omni-bar-input {
   border: none;
   background: transparent;
@@ -78,14 +134,6 @@
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.35);
-}
-
-.omni-bar-root-inline .omni-results-panel {
-  position: absolute;
-  top: calc(100% + 0.5rem);
-  left: 0;
-  right: 0;
-  margin-top: 0;
 }
 
 .omni-results-panel {
@@ -230,4 +278,52 @@
   justify-content: center;
   border-radius: 12px;
   background: rgba(0, 0, 0, 0.3);
+}
+
+.omni-filter-row-panel {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin-top: 0;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(10, 10, 15, 0.98);
+}
+
+.omni-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  pointer-events: auto;
+}
+
+.omni-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.3rem 0.65rem;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.55);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.omni-filter-chip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fafafa;
+}
+
+.omni-filter-chip-active {
+  border-color: rgba(190, 238, 29, 0.45);
+  background: rgba(190, 238, 29, 0.12);
+  color: #beee1d;
+}
+
+.omni-results-section-head {
+  align-items: flex-start;
 }

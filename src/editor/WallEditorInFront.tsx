@@ -1,16 +1,8 @@
 /**
- * Editor-only canvas overlays — inspector, snap guides (inside tldraw context).
+ * Editor-only canvas overlays inside tldraw (snap guides only).
  */
-import { WallInspector } from '@/editor/WallInspector'
 import { WallSnapGuides } from '@/editor/WallSnapGuides'
 
 export function WallEditorInFront() {
-  return (
-    <>
-      <WallSnapGuides />
-      <div className="wall-editor-hud">
-        <WallInspector />
-      </div>
-    </>
-  )
+  return <WallSnapGuides />
 }

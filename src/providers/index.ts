@@ -1,4 +1,5 @@
 import type { OmniSection } from '@/providers/types'
+import type { OmniSearchFilter } from '@/lib/omni-catalog'
 import { inferActions } from '@/providers/actions'
 import { searchImages } from '@/providers/images'
 import { searchGifs } from '@/providers/gifs'
@@ -7,22 +8,40 @@ import { searchEmojis, searchIcons } from '@/providers/emojis'
 import { searchWidgets } from '@/providers/widgets'
 import { searchLinks } from '@/providers/links'
 
-const PROVIDERS = [
-  inferActions,
-  searchImages,
-  searchGifs,
-  searchAudio,
-  searchEmojis,
-  searchIcons,
-  searchWidgets,
-  searchLinks,
-] as const
+type ProviderFn = (query: string, browse?: boolean) => Promise<{ section: OmniSection } | null>
 
-export async function runOmniSearch(query: string): Promise<OmniSection[]> {
+const ALL_PROVIDERS: Record<OmniSearchFilter, ProviderFn[]> = {
+  all: [
+    inferActions as ProviderFn,
+    searchImages,
+    searchGifs,
+    searchAudio,
+    searchEmojis,
+    searchIcons,
+    searchWidgets,
+    searchLinks,
+  ],
+  images: [searchImages],
+  gifs: [searchGifs],
+  audio: [searchAudio],
+  emojis: [searchEmojis, searchIcons],
+  widgets: [searchWidgets],
+  links: [searchLinks],
+  actions: [inferActions as ProviderFn],
+}
+
+const SECTION_ORDER = ['actions', 'images', 'gifs', 'audio', 'emojis', 'icons', 'widgets', 'links']
+
+export async function runOmniSearch(
+  query: string,
+  filter: OmniSearchFilter = 'all',
+): Promise<OmniSection[]> {
   const q = query.trim()
-  if (!q) return []
+  const browse = q.length === 0
+  if (browse && filter === 'all') return []
 
-  const settled = await Promise.allSettled(PROVIDERS.map((fn) => fn(q)))
+  const providers = ALL_PROVIDERS[filter] ?? ALL_PROVIDERS.all
+  const settled = await Promise.allSettled(providers.map((fn) => fn(q, browse)))
   const sections: OmniSection[] = []
 
   for (const result of settled) {
@@ -31,10 +50,17 @@ export async function runOmniSearch(query: string): Promise<OmniSection[]> {
     }
   }
 
-  const order = ['actions', 'images', 'gifs', 'audio', 'emojis', 'icons', 'widgets', 'links']
-  sections.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id))
-
+  sections.sort((a, b) => SECTION_ORDER.indexOf(a.id) - SECTION_ORDER.indexOf(b.id))
   return sections
 }
 
-export { inferActions, searchImages, searchGifs, searchAudio, searchEmojis, searchIcons, searchWidgets, searchLinks }
+export {
+  inferActions,
+  searchImages,
+  searchGifs,
+  searchAudio,
+  searchEmojis,
+  searchIcons,
+  searchWidgets,
+  searchLinks,
+}

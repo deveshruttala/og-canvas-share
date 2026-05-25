@@ -3,6 +3,34 @@ import { X, Search } from 'lucide-react'
 import { useUiStore } from '@/store/ui.store'
 import { wallActions } from '@/editor/wall-actions'
 import { fetchGifPickerResults } from '@/providers/gifs'
+import { cn } from '@/lib/cn'
+
+const QUICK_TAGS = [
+  'trending',
+  'celebration',
+  'reaction',
+  'funny',
+  'love',
+  'wow',
+  'dance',
+  'cat',
+  'dog',
+  'work',
+  'sports',
+  'nature',
+  'gaming',
+  'anime',
+  'meme',
+  'happy',
+  'sad',
+  'thumbs up',
+  'hello',
+  'party',
+  'coffee',
+  'rain',
+  'space',
+  'art',
+] as const
 
 export function GifPicker() {
   const open = useUiStore((s) => s.showGifPicker)
@@ -41,9 +69,12 @@ export function GifPicker() {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center">
-      <div className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-[var(--r-xl)] bg-[var(--bg-surface)] shadow-[var(--shadow-lg)]">
+      <div className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-[var(--r-xl)] bg-[var(--bg-surface)] shadow-[var(--shadow-lg)]">
         <div className="flex items-center justify-between border-b border-[var(--bg-muted)] px-4 py-3">
-          <h3 className="font-display text-lg text-[var(--text-primary)]">Add a GIF</h3>
+          <div>
+            <h3 className="font-display text-lg text-[var(--text-primary)]">GIF Library</h3>
+            <p className="text-[10px] text-[var(--text-tertiary)]">Giphy · Tenor · Openverse — up to 48 results</p>
+          </div>
           <button
             type="button"
             onClick={() => setOpen(false)}
@@ -58,7 +89,7 @@ export function GifPicker() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void runSearch(query.trim() || 'trending')}
-            placeholder="Search GIFs (e.g. train, celebration)…"
+            placeholder="Search GIFs (e.g. train, celebration, cat)…"
             className="flex-1 bg-transparent text-sm outline-none"
           />
           <button
@@ -69,15 +100,35 @@ export function GifPicker() {
             Search
           </button>
         </div>
+        <div className="flex flex-wrap gap-1.5 border-b border-[var(--bg-muted)] px-3 py-2">
+          {QUICK_TAGS.map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              className={cn(
+                'rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide',
+                query === tag || (tag === 'trending' && !query.trim())
+                  ? 'bg-[var(--accent)]/15 text-[var(--accent-text)]'
+                  : 'bg-white/5 text-[var(--text-secondary)] hover:bg-white/10',
+              )}
+              onClick={() => {
+                setQuery(tag === 'trending' ? '' : tag)
+                void runSearch(tag)
+              }}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
         {source && (
           <p className="border-b border-[var(--bg-muted)] px-4 py-1.5 text-[10px] text-[var(--text-tertiary)]">
-            {source}
+            Source: {source}
           </p>
         )}
         {hint && (
           <p className="border-b border-[var(--bg-muted)] px-4 py-2 text-xs text-amber-700">{hint}</p>
         )}
-        <div className="grid flex-1 grid-cols-3 gap-2 overflow-y-auto p-3 sm:grid-cols-4">
+        <div className="grid flex-1 grid-cols-3 gap-2 overflow-y-auto p-3 sm:grid-cols-4 md:grid-cols-5">
           {loading && (
             <p className="col-span-full py-8 text-center text-sm text-[var(--text-secondary)]">
               Loading…
@@ -85,7 +136,7 @@ export function GifPicker() {
           )}
           {!loading && results.length === 0 && (
             <p className="col-span-full py-8 text-center text-sm text-[var(--text-secondary)]">
-              No GIFs found. Try another word or add a Giphy API key in Connections.
+              No GIFs found. Try another tag or add a Giphy API key in Connections.
             </p>
           )}
           {!loading &&

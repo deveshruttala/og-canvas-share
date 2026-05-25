@@ -5,6 +5,7 @@ import 'tldraw/tldraw.css'
 import '@/editor/tldraw-wall.css'
 import { WallCustomOverlay } from '@/editor/WallCustomOverlay'
 import { WallEditorInFront } from '@/editor/WallEditorInFront'
+import { WallInspectorLayer } from '@/editor/WallInspectorLayer'
 import { WallLinkHandler } from '@/editor/WallLinkHandler'
 import { WallPageCanvas } from '@/editor/WallPageCanvas'
 import { WallTextBackdrops } from '@/editor/WallTextBackdrops'
@@ -24,6 +25,7 @@ import {
 } from '@/editor/wall-editor-api'
 import {
   fixInvisibleWallHosts,
+  sanitizeWallShapeMetas,
   upgradeBrokenEmbeds,
   upgradeLegacyBookmarks,
 } from '@/editor/wall-host-shape'
@@ -66,7 +68,12 @@ function WallTldrawEditorInner({ readOnly = false, className }: Props) {
           <>
             <WallCustomOverlay readOnly={readOnlyRef.current} />
             {readOnlyRef.current && <WallLinkHandler enabled />}
-            {!readOnlyRef.current && <WallEditorInFront />}
+            {!readOnlyRef.current && (
+              <>
+                <WallEditorInFront />
+                <WallInspectorLayer />
+              </>
+            )}
           </>
         )
       },
@@ -87,6 +94,7 @@ function WallTldrawEditorInner({ readOnly = false, className }: Props) {
         migratedRef.current = true
       }
 
+      sanitizeWallShapeMetas(editor)
       fixInvisibleWallHosts(editor)
       void upgradeLegacyBookmarks(editor)
       void upgradeBrokenEmbeds(editor)

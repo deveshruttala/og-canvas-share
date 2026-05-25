@@ -65,42 +65,57 @@ async function searchPexels(q: string, key?: string) {
   }
 }
 
+type OpenverseImage = {
+  id: string
+  title?: string
+  url?: string
+  thumbnail?: string
+  thumbnail_url?: string
+  creator?: string
+  creator_url?: string
+}
+
+function openverseThumb(r: OpenverseImage): string | undefined {
+  return r.thumbnail ?? r.thumbnail_url ?? r.url
+}
+
 /** Free CC image search — no API key (Openverse / Creative Commons). */
 async function searchOpenverse(q: string): Promise<OmniItem[]> {
   try {
-    const url = `${OPENVERSE_BASE}?q=${encodeURIComponent(q)}&page_size=12`
+    const url = `${OPENVERSE_BASE}?q=${encodeURIComponent(q)}&page_size=24`
     const res = await fetch(url)
-    if (!res.ok) return []
-    const data = (await res.json()) as {
-      results?: Array<{
-        id: string
-        title?: string
-        url?: string
-        thumbnail?: string
-        creator?: string
-        creator_url?: string
-      }>
+    if (!res.ok) {
+      console.warn('[images] Openverse search failed', res.status, await res.text().catch(() => ''))
+      return []
     }
-    return (data.results ?? [])
-      .filter((r) => r.url)
-      .map((r) => ({
+    const data = (await res.json()) as { results?: OpenverseImage[] }
+    const items: OmniItem[] = []
+    for (const r of data.results ?? []) {
+      const imageUrl = r.url?.trim()
+      const thumb = openverseThumb(r)
+      if (!imageUrl || !thumb) continue
+      items.push({
         id: `openverse-${r.id}`,
-        kind: 'image' as const,
+        kind: 'image',
         title: r.title?.trim() || q,
-        thumb: r.thumbnail ?? r.url!,
-        previewUrl: r.url!,
+        thumb,
+        previewUrl: imageUrl,
         source: 'Openverse',
         attribution: r.creator ?? 'CC',
-        payload: { url: r.url!, attribution: r.creator, creatorUrl: r.creator_url },
-      }))
-  } catch {
+        payload: { url: imageUrl, attribution: r.creator, creatorUrl: r.creator_url },
+      })
+    }
+    return items
+  } catch (err) {
+    console.warn('[images] Openverse search error', err)
     return []
   }
 }
 
-export async function searchImages(query: string): Promise<ProviderResult | null> {
-  const q = query.trim()
-  if (q.length < 2) return null
+export async function searchImages(query: string, browse = false): Promise<ProviderResult | null> {
+  const raw = query.trim()
+  if (raw.length < 2 && !browse) return null
+  const q = raw.length < 2 ? 'nature landscape' : raw
 
   const unsplashKey = getProviderKey('unsplash')
   const pexelsKey = getProviderKey('pexels')
@@ -137,8 +152,8 @@ export async function searchImages(query: string): Promise<ProviderResult | null
       id: 'images',
       title: 'Images',
       source: sources.join(' + ') || 'Search',
-      items: merged.slice(0, 12),
-      more: merged.length > 12,
+      items: merged.slice(0, 32),
+      more: merged.length > 32,
     },
   }
 }
