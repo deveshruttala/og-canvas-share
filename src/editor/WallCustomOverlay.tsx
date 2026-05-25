@@ -6,17 +6,13 @@ import { WidgetElement } from '@/canvas/elements/WidgetElement'
 import { ProgressElement } from '@/canvas/elements/ProgressElement'
 import { SoundPadElement } from '@/canvas/elements/SoundPadElement'
 import { PolaroidElement } from '@/canvas/elements/PolaroidElement'
+import { LinkCard } from '@/canvas/elements/LinkCard'
+import { getWallOverlayLayout, type WallHostMeta } from '@/editor/wall-host-shape'
 import type { CanvasElement } from '@/types/canvas'
 import { cn } from '@/lib/cn'
 
-type WallMeta = {
-  wallType?: 'audio' | 'qr' | 'widget' | 'progress' | 'soundpad' | 'polaroid'
-  wallData?: Record<string, unknown>
-  wallStyle?: { gradient?: string }
-}
-
 function shapeToCanvasElement(shape: TLGeoShape): CanvasElement | null {
-  const meta = shape.meta as WallMeta
+  const meta = shape.meta as WallHostMeta
   if (!meta.wallType || !meta.wallData) return null
 
   const base = {
@@ -50,10 +46,17 @@ function shapeToCanvasElement(shape: TLGeoShape): CanvasElement | null {
     }
   }
   if (meta.wallType === 'widget') {
+    const data = meta.wallData as {
+      type: 'clock' | 'weather' | 'spotify' | 'github'
+      label?: string
+      location?: string
+      timezone?: string
+      repo?: string
+    }
     return {
       ...base,
       type: 'widget',
-      content: meta.wallData as { type: 'clock' | 'weather' | 'spotify' | 'github' },
+      content: data,
       style: { ...base.style, bg: meta.wallStyle?.gradient ?? '#0d0e12', color: '#fafafa', borderRadius: 16 },
     }
   }
@@ -81,6 +84,29 @@ function shapeToCanvasElement(shape: TLGeoShape): CanvasElement | null {
       style: { bg: '#faf8f5', borderRadius: 4 },
     }
   }
+  if (meta.wallType === 'link') {
+    const data = meta.wallData as {
+      url: string
+      title?: string
+      description?: string
+      image?: string
+    }
+    return {
+      ...base,
+      type: 'link',
+      content: {
+        url: data.url,
+        title: data.title ?? data.url,
+        description: data.description,
+        image: data.image,
+      },
+      style: {
+        bg: meta.wallStyle?.gradient ?? '#1a1d26',
+        color: '#fafafa',
+        borderRadius: 12,
+      },
+    }
+  }
   return null
 }
 
@@ -88,36 +114,37 @@ function shapeToCanvasElement(shape: TLGeoShape): CanvasElement | null {
 export function WallCustomOverlay({ readOnly }: { readOnly?: boolean }) {
   const editor = useEditor()
 
+  const camera = useValue('wall-overlay-camera', () => editor.getCamera(), [editor])
+
   const overlays = useValue(
     'wall-overlays',
-    () =>
-      editor
+    () => {
+      void camera
+      return editor
         .getCurrentPageShapes()
-        .filter((s) => s.type === 'geo' && (s.meta as WallMeta)?.wallType)
+        .filter((s) => s.type === 'geo' && (s.meta as WallHostMeta)?.wallType)
         .map((s) => {
-          const bounds = editor.getShapePageBounds(s.id)
-          if (!bounds) return null
-          const meta = s.meta as WallMeta
-          const el = shapeToCanvasElement(s as TLGeoShape)
+          const geo = s as TLGeoShape
+          const el = shapeToCanvasElement(geo)
           if (!el) return null
-          const screen = editor.pageToScreen({ x: bounds.x, y: bounds.y })
-          const zoom = editor.getZoomLevel()
-          return { el, screen, zoom, shapeId: s.id, wallType: meta.wallType }
+          const layout = getWallOverlayLayout(editor, geo)
+          const meta = geo.meta as WallHostMeta
+          return { el, layout, shapeId: geo.id, wallType: meta.wallType }
         })
         .filter(Boolean) as Array<{
         el: CanvasElement
-        screen: { x: number; y: number }
-        zoom: number
+        layout: ReturnType<typeof getWallOverlayLayout>
         shapeId: string
-        wallType: WallMeta['wallType']
-      }>,
-    [editor],
+        wallType: WallHostMeta['wallType']
+      }>
+    },
+    [editor, camera],
   )
 
   const updateWallData = (shapeId: string, patch: Record<string, unknown>) => {
     const shape = editor.getShape(shapeId as never)
     if (!shape) return
-    const meta = shape.meta as WallMeta
+    const meta = shape.meta as WallHostMeta
     editor.updateShape({
       id: shape.id,
       type: shape.type,
@@ -133,36 +160,42 @@ export function WallCustomOverlay({ readOnly }: { readOnly?: boolean }) {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-[300] overflow-hidden">
-      {overlays.map(({ el, screen, zoom, shapeId, wallType }) => {
+      {overlays.map(({ el, layout, shapeId, wallType }) => {
         const selected = selectedIds.has(shapeId as never)
         return (
           <div
-            key={el.id}
+            key={shapeId}
             className={cn(
               'pointer-events-none absolute origin-top-left wall-overlay-shell',
               selected && 'wall-overlay-selected',
             )}
-          style={{
-            left: screen.x,
-            top: screen.y,
-            width: el.w * zoom,
-            height: el.h * zoom,
-            transform: `rotate(${el.rotation}deg)`,
-          }}
-        >
-          {wallType === 'audio' && <AudioElement element={el} selected={selected} />}
-          {wallType === 'qr' && <QrElement element={el} />}
-          {wallType === 'widget' && <WidgetElement element={el} />}
-          {wallType === 'progress' && <ProgressElement element={el} />}
-          {wallType === 'soundpad' && <SoundPadElement element={el} readOnly={readOnly} />}
-          {wallType === 'polaroid' && (
-            <PolaroidElement
-              element={el}
-              readOnly={readOnly}
-              onCaptionChange={(caption) => updateWallData(shapeId, { caption })}
-            />
-          )}
-        </div>
+            style={{
+              left: layout.left,
+              top: layout.top,
+              width: layout.width,
+              height: layout.height,
+              transform: layout.rotationDeg ? `rotate(${layout.rotationDeg}deg)` : undefined,
+              transformOrigin: 'top left',
+            }}
+          >
+            {wallType === 'audio' && <AudioElement element={el} selected={selected} />}
+            {wallType === 'qr' && <QrElement element={el} selected={selected} />}
+            {wallType === 'widget' && <WidgetElement element={el} selected={selected} />}
+            {wallType === 'progress' && <ProgressElement element={el} />}
+            {wallType === 'soundpad' && <SoundPadElement element={el} readOnly={readOnly} />}
+            {wallType === 'polaroid' && (
+              <PolaroidElement
+                element={el}
+                readOnly={readOnly}
+                onCaptionChange={(caption) => updateWallData(shapeId, { caption })}
+              />
+            )}
+            {wallType === 'link' && (
+              <div className="wall-link-overlay h-full w-full">
+                <LinkCard element={el} selected={selected} readOnly />
+              </div>
+            )}
+          </div>
         )
       })}
     </div>

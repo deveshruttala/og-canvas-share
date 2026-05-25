@@ -13,6 +13,22 @@ export type ThemeId =
   | 'notebook'
   | 'black'
   | 'white'
+  | 'dotgrid'
+  | 'chalkboard'
+  | 'sunset'
+  | 'ocean'
+  | 'midnight'
+  | 'neon'
+  | 'pastel'
+  | 'wood'
+  | 'concrete'
+  | 'lavender'
+  | 'mint'
+  | 'rose'
+  | 'slate'
+  | 'cream'
+  | 'sky'
+  | 'forest'
 
 export type ElementType =
   | 'text'
@@ -85,6 +101,8 @@ export type CanvasDoc = {
   id: string
   title: string
   theme: ThemeId
+  /** CSS color, gradient, or image URL — overrides theme page background */
+  customPageBackground?: string | null
   accent: string
   width: typeof CANVAS_WIDTH
   height: typeof CANVAS_HEIGHT
@@ -189,6 +207,8 @@ export type WidgetContent = {
   type: 'clock' | 'weather' | 'spotify' | 'github'
   label?: string
   location?: string
+  /** IANA timezone for clock widgets (e.g. Europe/London) */
+  timezone?: string
   repo?: string
 }
 

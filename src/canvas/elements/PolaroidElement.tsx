@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { CanvasElement } from '@/types/canvas'
+import { displayAssetUrl } from '@/lib/asset-proxy'
 
 type Props = {
   element: CanvasElement
@@ -15,7 +16,12 @@ export function PolaroidElement({ element, readOnly, onCaptionChange }: Props) {
     <div className="wall-polaroid flex h-full w-full flex-col bg-[#faf8f5] p-3 shadow-2xl">
       <div className="relative flex-1 overflow-hidden bg-neutral-900">
         {data.src ? (
-          <img src={data.src} alt="" className="h-full w-full object-cover" draggable={false} />
+          <img
+            src={displayAssetUrl(data.src)}
+            alt=""
+            className="h-full w-full object-cover"
+            draggable={false}
+          />
         ) : (
           <div className="flex h-full items-center justify-center text-neutral-600 text-xs">No image</div>
         )}

@@ -2,6 +2,7 @@ import { ExternalLink } from 'lucide-react'
 import type { CanvasElement, LinkContent } from '@/types/canvas'
 import { elementStyleToCss } from '@/canvas/elementStyle'
 import { cn } from '@/lib/cn'
+import { displayAssetUrl } from '@/lib/asset-proxy'
 
 type LinkCardProps = {
   element: CanvasElement
@@ -16,7 +17,7 @@ export function LinkCard({ element, selected, readOnly }: LinkCardProps) {
     <div className="flex h-full flex-col overflow-hidden p-3">
       {content.image ? (
         <img
-          src={content.image}
+          src={displayAssetUrl(content.image)}
           alt=""
           className="mb-2 h-12 w-full rounded object-cover"
           draggable={false}

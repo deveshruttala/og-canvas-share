@@ -38,10 +38,11 @@ async function searchFreesound(q: string, token?: string): Promise<ProviderResul
 }
 
 async function searchDeezer(q: string): Promise<ProviderResult['section']['items']> {
-  const res = await fetch(`https://api.deezer.com/search?q=${encodeURIComponent(q)}&limit=6`)
-  if (!res.ok) return []
-  const data = await res.json()
-  return (data.data ?? [])
+  try {
+    const res = await fetch(`https://api.deezer.com/search?q=${encodeURIComponent(q)}&limit=6`)
+    if (!res.ok) return []
+    const data = await res.json()
+    return (data.data ?? [])
     .filter((t: { preview?: string }) => t.preview)
     .map(
       (t: {
@@ -69,6 +70,9 @@ async function searchDeezer(q: string): Promise<ProviderResult['section']['items
         },
       }),
     )
+  } catch {
+    return []
+  }
 }
 
 export async function searchAudio(query: string): Promise<ProviderResult | null> {

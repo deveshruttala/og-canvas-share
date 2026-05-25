@@ -39,7 +39,7 @@ export function Editor() {
   const hydrate = useCanvasStore((s) => s.hydrate)
   const hydrated = useCanvasStore((s) => s.hydrated)
   const saveStatus = useCanvasStore((s) => s.saveStatus)
-  const doc = useCanvasStore((s) => s.doc)
+  const wallTitle = useCanvasStore((s) => s.doc.title)
   const setTitle = useCanvasStore((s) => s.setTitle)
   const persist = useCanvasStore((s) => s.persist)
   const setShowHelpOverlay = useUiStore((s) => s.setShowHelpOverlay)
@@ -87,8 +87,10 @@ export function Editor() {
 
   useEffect(() => {
     const refresh = () => {
-      setCanUndo(wallActions.canUndo())
-      setCanRedo(wallActions.canRedo())
+      const u = wallActions.canUndo()
+      const r = wallActions.canRedo()
+      setCanUndo((prev) => (prev === u ? prev : u))
+      setCanRedo((prev) => (prev === r ? prev : r))
     }
     refresh()
     return onHistoryChange(refresh)
@@ -178,7 +180,7 @@ export function Editor() {
             <span className="hidden text-white/15 sm:inline">|</span>
             <input
               type="text"
-              value={doc.title}
+              value={wallTitle}
               onChange={(e) => setTitle(e.target.value)}
               className="min-w-0 max-w-[140px] truncate border-b border-transparent bg-transparent text-xs font-extrabold uppercase tracking-wider text-white outline-none transition hover:border-white/10 focus:border-[#beee1d] sm:max-w-[200px] sm:text-sm"
             />

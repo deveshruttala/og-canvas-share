@@ -4,9 +4,8 @@ export type AuthMode = 'local' | 'api'
 export function getAuthMode(): AuthMode {
   const mode = import.meta.env.VITE_AUTH_MODE as string | undefined
   if (mode === 'api') return 'api'
-  if (mode === 'local') return 'local'
-  // Default: local when no API URL (offline-first dev)
-  return import.meta.env.VITE_API_URL ? 'api' : 'local'
+  // Default local — npm run dev works without the Deno backend
+  return 'local'
 }
 
 export function isLocalAuth() {

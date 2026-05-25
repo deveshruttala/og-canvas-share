@@ -1,6 +1,7 @@
-import { type FormEvent, useEffect, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '@/ui/Logo'
+import { usernameValidationError } from '@/lib/auth/reserved'
 import { useAuthStore } from '@/store/auth.store'
 import '@/styles/landing.css'
 
@@ -14,6 +15,7 @@ export function Signup() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [email, setEmail] = useState('')
+  const usernameFieldError = useMemo(() => usernameValidationError(username), [username])
 
   useEffect(() => {
     void fetchMe()
@@ -25,6 +27,7 @@ export function Signup() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
+    if (usernameValidationError(username)) return
     try {
       await signup(username, password, email || undefined)
       navigate('/edit')
@@ -52,12 +55,26 @@ export function Signup() {
                 maxLength={24}
                 pattern="[a-z0-9-]+"
                 value={username}
-                onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                onChange={(e) => {
+                  const next = e.target.value.toLowerCase()
+                  setUsername(next)
+                }}
                 placeholder="yourname"
                 autoComplete="username"
+                aria-invalid={Boolean(usernameFieldError)}
+                aria-describedby="signup-username-hint"
                 className="auth-input"
               />
             </div>
+            {username && (
+              <p
+                id="signup-username-hint"
+                className={usernameFieldError ? 'auth-error mt-1' : 'auth-hint mt-1'}
+              >
+                {usernameFieldError ??
+                  `Your wall will be at wall.app/u/${username}`}
+              </p>
+            )}
           </div>
 
           <div className="auth-field">
@@ -88,7 +105,7 @@ export function Signup() {
             />
           </div>
 
-          {error && <p className="auth-error">{error}</p>}
+          {error && !usernameFieldError && <p className="auth-error">{error}</p>}
 
           <button type="submit" disabled={loading} className="btn-neon auth-submit">
             {loading ? 'Creating…' : 'Create my wall'}

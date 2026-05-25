@@ -1,8 +1,8 @@
 import type { Editor } from '@tldraw/editor'
 import { AssetRecordType, createShapeId, toRichText } from '@tldraw/tlschema'
-import { createEmptyBookmarkShape } from 'tldraw'
 import type { CanvasElement } from '@/types/canvas'
 import { detectLinkPlatform, getEmbedUrl } from '@/lib/link-resolver'
+import { buildWallLinkMeta, wallHostGeoProps, WALL_LINK_H, WALL_LINK_W } from '@/editor/wall-host-shape'
 
 /** One-time migration from legacy CanvasElement[] to tldraw shapes */
 export function migrateLegacyElements(editor: Editor, elements: CanvasElement[]) {
@@ -57,8 +57,21 @@ export function migrateLegacyElements(editor: Editor, elements: CanvasElement[])
     }
 
     if (el.type === 'link') {
-      const url = (el.content as { url: string }).url
-      createEmptyBookmarkShape(editor, url, { x: el.x, y: el.y })
+      const c = el.content as { url: string; title?: string; description?: string; image?: string }
+      editor.createShape({
+        id,
+        type: 'geo',
+        x: el.x,
+        y: el.y,
+        rotation: (el.rotation * Math.PI) / 180,
+        opacity: 0.001,
+        props: wallHostGeoProps(el.w || WALL_LINK_W, el.h || WALL_LINK_H),
+        meta: buildWallLinkMeta(c.url, {
+          title: c.title,
+          description: c.description,
+          image: c.image,
+        }),
+      })
       continue
     }
 
@@ -139,6 +152,19 @@ export async function migrateLinkElement(editor: Editor, el: CanvasElement) {
       props: { w: el.w, h: el.h, url: embedUrl },
     })
   } else {
-    createEmptyBookmarkShape(editor, url, { x: el.x, y: el.y })
+    const c = el.content as { url: string; title?: string; description?: string; image?: string }
+    editor.createShape({
+      id: createShapeId(),
+      type: 'geo',
+      x: el.x,
+      y: el.y,
+      opacity: 0.001,
+      props: wallHostGeoProps(el.w || WALL_LINK_W, el.h || WALL_LINK_H),
+      meta: buildWallLinkMeta(url, {
+        title: c.title,
+        description: c.description,
+        image: c.image,
+      }),
+    })
   }
 }

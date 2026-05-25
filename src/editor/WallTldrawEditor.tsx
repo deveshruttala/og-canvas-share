@@ -1,26 +1,35 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Tldraw, type TLComponents } from 'tldraw'
-import { getSnapshot, type Editor } from '@tldraw/editor'
+import type { Editor } from '@tldraw/editor'
 import 'tldraw/tldraw.css'
 import '@/editor/tldraw-wall.css'
 import { WallCustomOverlay } from '@/editor/WallCustomOverlay'
 import { WallEditorInFront } from '@/editor/WallEditorInFront'
 import { WallLinkHandler } from '@/editor/WallLinkHandler'
+import { WallPageCanvas } from '@/editor/WallPageCanvas'
+import { WallTextBackdrops } from '@/editor/WallTextBackdrops'
+import { WallThemeBackground } from '@/editor/WallThemeBackground'
 import {
+  applyWallTheme,
+  attachWallDocumentSync,
   fitPublicWall,
   getWallEditor,
   HIDDEN_TLDRAW_UI,
   notifyZoom,
-  notifyHistoryChange,
   registerWallEditor,
   setWallReadonly,
   setupWallSurface,
+  WALL_CAMERA,
   WALL_TLDRAW_OPTIONS,
 } from '@/editor/wall-editor-api'
+import {
+  fixInvisibleWallHosts,
+  upgradeBrokenEmbeds,
+  upgradeLegacyBookmarks,
+} from '@/editor/wall-host-shape'
 import { migrateLegacyElements } from '@/editor/wall-migrate'
 import { useCanvasStore } from '@/store/canvas.store'
 import { getTheme } from '@/themes'
-import { debounce } from '@/lib/cn'
 import type { CanvasDoc } from '@/types/canvas'
 
 type Props = {
@@ -28,64 +37,66 @@ type Props = {
   className?: string
 }
 
-function WallBackground() {
-  return <div className="wall-workspace-bg pointer-events-none absolute inset-0" aria-hidden />
-}
-
-export function WallTldrawEditor({ readOnly = false, className }: Props) {
-  const doc = useCanvasStore((s) => s.doc)
+function WallTldrawEditorInner({ readOnly = false, className }: Props) {
   const syncSnapshot = useCanvasStore((s) => s.syncFromSnapshot)
-  const theme = getTheme(doc.theme)
+  const themeId = useCanvasStore((s) => s.doc.theme)
   const migratedRef = useRef(false)
   const readOnlyRef = useRef(readOnly)
   readOnlyRef.current = readOnly
 
-  const components = useMemo((): TLComponents => {
-    const InFront = () => (
-      <>
-        <WallCustomOverlay readOnly={readOnlyRef.current} />
-        {readOnlyRef.current && <WallLinkHandler enabled />}
-        {!readOnlyRef.current && <WallEditorInFront />}
-      </>
-    )
-    return {
-      ...HIDDEN_TLDRAW_UI,
-      Background: WallBackground,
-      InFrontOfTheCanvas: InFront,
-    }
-  }, [])
+  const mountSnapshotRef = useRef<CanvasDoc['snapshot'] | undefined>(undefined)
+  if (mountSnapshotRef.current === undefined) {
+    mountSnapshotRef.current = useCanvasStore.getState().doc.snapshot
+  }
 
-  const debouncedSync = useMemo(
-    () =>
-      debounce((editor: Editor) => {
-        const snap = getSnapshot(editor.store)
-        syncSnapshot(snap as unknown as CanvasDoc['snapshot'])
-      }, 400),
-    [syncSnapshot],
+  const components = useMemo(
+    (): TLComponents => ({
+      ...HIDDEN_TLDRAW_UI,
+      Background: WallThemeBackground,
+      OnTheCanvas: function WallOnCanvas() {
+        return (
+          <>
+            <WallPageCanvas />
+            <WallTextBackdrops />
+          </>
+        )
+      },
+      InFrontOfTheCanvas: function WallInFront() {
+        return (
+          <>
+            <WallCustomOverlay readOnly={readOnlyRef.current} />
+            {readOnlyRef.current && <WallLinkHandler enabled />}
+            {!readOnlyRef.current && <WallEditorInFront />}
+          </>
+        )
+      },
+    }),
+    [],
   )
 
   const onMount = useCallback(
     (editor: Editor) => {
       registerWallEditor(editor)
       setWallReadonly(editor, readOnlyRef.current)
-      setupWallSurface(editor, theme.background, readOnlyRef.current ? 'public' : 'edit')
+      const initialTheme = getTheme(useCanvasStore.getState().doc.theme)
+      setupWallSurface(editor, initialTheme, readOnlyRef.current ? 'public' : 'edit')
 
-      if (!doc.snapshot && doc.elements.length > 0 && !migratedRef.current) {
-        migrateLegacyElements(editor, doc.elements)
+      const { snapshot, elements } = useCanvasStore.getState().doc
+      if (!snapshot && elements.length > 0 && !migratedRef.current) {
+        migrateLegacyElements(editor, elements)
         migratedRef.current = true
       }
 
+      fixInvisibleWallHosts(editor)
+      void upgradeLegacyBookmarks(editor)
+      void upgradeBrokenEmbeds(editor)
+
       editor.setCurrentTool(readOnlyRef.current ? 'hand' : 'select')
 
-      const unsubDoc = editor.store.listen(
-        () => {
-          if (!readOnlyRef.current) {
-            debouncedSync(editor)
-            notifyHistoryChange()
-          }
-        },
-        { scope: 'document' },
-      )
+      const unsubSync = attachWallDocumentSync(editor, {
+        readOnly: () => readOnlyRef.current,
+        onPersist: (snap) => syncSnapshot(snap as CanvasDoc['snapshot']),
+      })
 
       const unsubCam = editor.sideEffects.registerAfterChangeHandler('camera', () => {
         if (!readOnlyRef.current) notifyZoom(editor.getZoomLevel())
@@ -101,35 +112,45 @@ export function WallTldrawEditor({ readOnly = false, className }: Props) {
       }
 
       return () => {
-        unsubDoc()
+        unsubSync()
         unsubCam()
         if (onResize) window.removeEventListener('resize', onResize)
         registerWallEditor(null)
       }
     },
-    [debouncedSync, doc.elements, doc.snapshot, theme.background],
+    [syncSnapshot],
   )
-
-  const initialSnapshot = doc.snapshot as never | undefined
 
   useEffect(() => {
     const editor = getWallEditor()
-    if (editor) {
-      setupWallSurface(editor, theme.background, readOnly ? 'public' : 'edit')
-      if (readOnly) fitPublicWall(editor)
+    if (editor) applyWallTheme(editor, getTheme(themeId))
+  }, [themeId])
+
+  useEffect(() => {
+    const editor = getWallEditor()
+    if (!editor) return
+    if (readOnly) {
+      fitPublicWall(editor)
+    } else {
+      editor.setCameraOptions(WALL_CAMERA)
     }
-  }, [theme.background, readOnly])
+  }, [readOnly])
 
   return (
-    <div className={`wall-tldraw-root relative h-full w-full ${readOnly ? 'wall-public-view' : ''} ${className ?? ''}`}>
+    <div
+      className={`wall-tldraw-root relative h-full w-full ${readOnly ? 'wall-public-view' : ''} ${className ?? ''}`}
+      data-wall-theme={themeId}
+    >
       <Tldraw
         licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY}
         colorScheme="light"
         components={components}
         options={WALL_TLDRAW_OPTIONS}
-        snapshot={initialSnapshot}
+        snapshot={mountSnapshotRef.current as never}
         onMount={onMount}
       />
     </div>
   )
 }
+
+export const WallTldrawEditor = memo(WallTldrawEditorInner)

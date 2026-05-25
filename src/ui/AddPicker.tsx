@@ -38,7 +38,8 @@ export function AddPicker() {
   }
 
   const items = [
-    { icon: Type, label: 'Sticky', action: () => wallActions.addSticky() },
+    { icon: Type, label: 'Text box', action: () => wallActions.addTextBox() },
+    { icon: Type, label: 'Sticky note', action: () => wallActions.addSticky() },
     {
       icon: Image,
       label: 'Image',

@@ -9,13 +9,13 @@ import { onHistoryChange } from '@/editor/wall-editor-api'
 export function SessionTimeline() {
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
-  const [pulse, setPulse] = useState(0)
 
   useEffect(() => {
     const refresh = () => {
-      setCanUndo(wallActions.canUndo())
-      setCanRedo(wallActions.canRedo())
-      setPulse((p) => p + 1)
+      const u = wallActions.canUndo()
+      const r = wallActions.canRedo()
+      setCanUndo((prev) => (prev === u ? prev : u))
+      setCanRedo((prev) => (prev === r ? prev : r))
     }
     refresh()
     return onHistoryChange(refresh)
@@ -26,7 +26,7 @@ export function SessionTimeline() {
       <History className="h-3.5 w-3.5 text-[#beee1d]" />
       <span className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Timeline</span>
 
-      <div className="wall-timeline-track" key={pulse}>
+      <div className="wall-timeline-track">
         {Array.from({ length: 12 }).map((_, i) => (
           <div
             key={i}

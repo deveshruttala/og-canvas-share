@@ -119,6 +119,26 @@
   background: transparent;
 }
 
+.wall-theme-panel {
+  animation: wall-theme-in 0.18s ease-out;
+}
+
+@keyframes wall-theme-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.wall-theme-option:focus-visible {
+  outline: 2px solid #beee1d;
+  outline-offset: 2px;
+}
+
 @keyframes wall-spin-slow {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -364,8 +384,21 @@
 
 .wall-overlay-selected {
   outline: 2px solid #beee1d;
-  outline-offset: 2px;
+  outline-offset: 0;
   border-radius: 1rem;
+}
+
+.wall-link-overlay {
+  pointer-events: auto;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(145deg, #242836 0%, #12141a 100%);
+  color: #fafafa;
+}
+
+.wall-link-overlay img {
+  object-fit: cover;
 }
 
 /* Snap guides */

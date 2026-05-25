@@ -34,7 +34,7 @@ function useVisBars(count: number, active: boolean) {
   return bars
 }
 
-export function WidgetElement({ element, selected }: Props) {
+export function WidgetElement({ element }: Props) {
   const widget = element.content as WidgetContent
   const [time, setTime] = useState(new Date())
   const [playing, setPlaying] = useState(true)
@@ -43,25 +43,33 @@ export function WidgetElement({ element, selected }: Props) {
 
   useEffect(() => {
     if (widget.type !== 'clock') return
-    const id = setInterval(() => setTime(new Date()), 1000)
+    const tick = () => setTime(new Date())
+    tick()
+    const id = setInterval(tick, 1000)
     return () => clearInterval(id)
-  }, [widget.type])
+  }, [widget.type, widget.timezone])
 
-  const shell = cn(
-    'flex h-full w-full flex-col overflow-hidden rounded-2xl border border-white/10 p-4 font-mono text-white wall-widget-shell',
-    selected && 'ring-2 ring-[#beee1d] ring-offset-2 ring-offset-black',
-  )
+  const shell =
+    'flex h-full w-full flex-col overflow-hidden rounded-2xl border border-white/10 p-4 font-mono text-white wall-widget-shell'
 
   const bg = (element.style as { gradient?: string }).gradient ?? element.style.bg ?? '#0d0e12'
 
   if (widget.type === 'clock') {
-    const h = time.getHours().toString().padStart(2, '0')
-    const m = time.getMinutes().toString().padStart(2, '0')
-    const s = time.getSeconds().toString().padStart(2, '0')
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: widget.timezone || undefined,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).formatToParts(time)
+    const pick = (type: string) => parts.find((p) => p.type === type)?.value ?? '00'
+    const h = pick('hour').padStart(2, '0')
+    const m = pick('minute').padStart(2, '0')
+    const s = pick('second').padStart(2, '0')
     return (
       <div className={shell} style={{ background: bg }}>
         <span className="text-[10px] font-black uppercase tracking-widest text-[#beee1d]">
-          {widget.location ?? widget.label ?? 'Flip Clock'}
+          {(widget.location ?? widget.label ?? 'Flip Clock').toUpperCase()}
         </span>
         <div className="mt-3 flex items-center justify-center gap-2">
           <FlipDigit value={h[0]!} />

@@ -38,8 +38,8 @@ export function Landing() {
             </h1>
 
             <p className="landing-lead">
-              One dynamic canvas for your bio, README, and embeds — Devesh&apos;s sample below shows what
-              yours could look like.
+              One dynamic canvas for your bio, README, and embeds — explore five sample walls below to see
+              what yours could look like.
             </p>
 
             <div className="landing-claim-bar">
@@ -67,8 +67,8 @@ export function Landing() {
               </p>
             )}
 
-            <a href="#canvas" className="landing-scroll-hint" aria-label="Scroll to live canvas preview">
-              <span>See Devesh&apos;s sample</span>
+            <a href="#canvas" className="landing-scroll-hint" aria-label="Scroll to sample walls">
+              <span>Explore sample walls</span>
               <ChevronDown className="h-4 w-4" aria-hidden />
             </a>
           </div>
@@ -78,8 +78,11 @@ export function Landing() {
 
         <section className="landing-section landing-canvas-section" id="canvas">
           <div className="landing-canvas-head">
-            <h2>Sample wall · @devesh</h2>
-            <p>A cleaner preview of what your living canvas can look like.</p>
+            <h2>Five ways to use your wall</h2>
+            <p>
+              Creator profile, product launch, fitness coach, design studio, or local café — each layout is
+              intentionally scattered, like a real canvas.
+            </p>
           </div>
           <LandingCanvasShowcase />
           <p className="landing-section-note">

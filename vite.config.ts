@@ -1,10 +1,25 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import { wallProxyPlugin } from './vite-proxy-plugin'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), wallProxyPlugin()],
   base: process.env.VITE_BASE || '/',
+  server: {
+    proxy: {
+      '/openverse-api': {
+        target: 'https://api.openverse.engineering',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/openverse-api/, ''),
+      },
+      '/microlink-api': {
+        target: 'https://api.microlink.io',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/microlink-api/, ''),
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

@@ -20,6 +20,12 @@
 .wall-workspace-bg {
   background-color: var(--bg-page, #faf8f5);
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: cover;
+  transition: background 0.35s ease;
+}
+
+.wall-theme-dotgrid {
+  background-size: 20px 20px, cover !important;
 }
 
 .wall-tldraw-root .tlui-layout {
@@ -28,4 +34,67 @@
 
 .wall-tldraw-root .tl-watermark_SEE-LICENSE {
   display: none;
+}
+
+/* Invisible geo hosts — widget UI is rendered in WallCustomOverlay */
+.wall-tldraw-root .tl-shape[style*='opacity: 0.001'] .tl-geo,
+.wall-tldraw-root .tl-shape[style*='opacity:0.001'] .tl-geo {
+  stroke: transparent !important;
+  fill: transparent !important;
+}
+
+/* Locked page frame — hit area only; visuals are WallPageCanvas */
+.wall-tldraw-root .tl-shape[data-shape-id='shape:wall-frame'],
+.wall-tldraw-root .tl-shape[data-shape-id='shape:wall-frame'] .tl-geo {
+  opacity: 0 !important;
+  stroke: transparent !important;
+  fill: transparent !important;
+  pointer-events: none !important;
+}
+
+/* Artboard (OnTheCanvas — page space coordinates) */
+.wall-page-canvas {
+  box-sizing: border-box;
+  transition: background 0.35s ease;
+}
+
+.wall-page-shadow {
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.06),
+    0 12px 40px rgba(0, 0, 0, 0.12),
+    0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.wall-page-border-dark {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+.wall-page-glass {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 12px 40px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+}
+
+.wall-page-neon {
+  box-shadow:
+    0 0 0 1px rgba(190, 238, 29, 0.25),
+    0 0 32px rgba(190, 238, 29, 0.08);
+}
+
+.wall-page-notebook {
+  border-left: 4px solid #fecaca;
+}
+
+.wall-page-texture {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.wall-text-card-backdrop {
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.06),
+    0 4px 16px rgba(0, 0, 0, 0.08);
 }

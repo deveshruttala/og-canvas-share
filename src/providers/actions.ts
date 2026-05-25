@@ -3,7 +3,7 @@ import { wallActions } from '@/editor/wall-actions'
 import { useCanvasStore } from '@/store/canvas.store'
 import { useUiStore } from '@/store/ui.store'
 import { useOmniStore } from '@/store/omni.store'
-import { themes } from '@/themes'
+import { isThemeId, themes } from '@/themes'
 
 function runAction(label: string, run: () => void) {
   return {
@@ -23,8 +23,8 @@ export async function inferActions(query: string): Promise<ProviderResult | null
 
   const themeMatch = q.match(/change theme to (\w+)|theme[:\s]+(\w+)/)
   if (themeMatch) {
-    const id = (themeMatch[1] ?? themeMatch[2]) as keyof typeof themes
-    if (themes[id]) {
+    const id = (themeMatch[1] ?? themeMatch[2] ?? '').toLowerCase()
+    if (isThemeId(id)) {
       items.push(
         runAction(`Change theme to "${themes[id].label}"`, () => {
           useCanvasStore.getState().setTheme(id)

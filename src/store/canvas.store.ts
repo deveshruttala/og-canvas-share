@@ -17,6 +17,7 @@ import {
 import { detectLinkPlatform, getEmbedUrl } from '@/lib/link-resolver'
 import { fetchLinkMeta } from '@/lib/extract-link-meta'
 import { debounce } from '@/lib/cn'
+import { getTheme } from '@/themes'
 import { saveCanvas } from '@/persist/db'
 import { LOCAL_CANVAS_ID, shouldPersistDoc } from '@/persist/constants'
 
@@ -32,6 +33,7 @@ type CanvasState = {
 
   hydrate: (doc: CanvasDoc) => void
   setTheme: (theme: ThemeId, accent?: string) => void
+  setPageBackground: (value: string | null) => void
   setTitle: (title: string) => void
   select: (id: string | null) => void
   addElement: (element: CanvasElement) => void
@@ -114,11 +116,27 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   },
 
   setTheme: (theme, accent) => {
+    const themeConfig = getTheme(theme)
+    set((state) => {
+      const doc: CanvasDoc = {
+        ...state.doc,
+        theme,
+        accent: accent ?? themeConfig.defaultAccent,
+        meta: { ...state.doc.meta, updatedAt: new Date().toISOString() },
+      }
+      return {
+        doc,
+        saveStatus: shouldPersistDoc(doc) ? ('saving' as const) : ('saved' as const),
+      }
+    })
+    schedulePersist()
+  },
+
+  setPageBackground: (value) => {
     set((state) =>
       withUpdatedDoc(state, (doc) => ({
         ...doc,
-        theme,
-        accent: accent ?? doc.accent,
+        customPageBackground: value,
       })),
     )
     schedulePersist()
@@ -319,14 +337,19 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     set({ saveStatus: 'saved' })
   },
 
+  /** Persist tldraw state only — must not push history or re-feed the live editor snapshot prop. */
   syncFromSnapshot: (snapshot) => {
-    set((state) =>
-      withUpdatedDoc(state, (doc) => ({
-        ...doc,
+    set((state) => {
+      const doc: CanvasDoc = {
+        ...state.doc,
         snapshot,
-        meta: { ...doc.meta, updatedAt: new Date().toISOString() },
-      })),
-    )
+        meta: { ...state.doc.meta, updatedAt: new Date().toISOString() },
+      }
+      return {
+        doc,
+        saveStatus: shouldPersistDoc(doc) ? ('saving' as const) : ('saved' as const),
+      }
+    })
     schedulePersist()
   },
 }))

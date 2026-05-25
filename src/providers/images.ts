@@ -1,77 +1,101 @@
 import type { ProviderResult } from '@/providers/types'
 import { getProviderKey } from '@/lib/provider-config'
+import type { OmniItem } from '@/providers/types'
 
-const DEMO_IMAGES = [
-  {
-    id: 'demo-1',
-    thumb: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
-    full: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200',
-    title: 'Mountain sunset',
-    author: 'Demo',
-  },
-  {
-    id: 'demo-2',
-    thumb: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400',
-    full: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1200',
-    title: 'Foggy forest',
-    author: 'Demo',
-  },
-  {
-    id: 'demo-3',
-    thumb: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400',
-    full: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200',
-    title: 'Nature valley',
-    author: 'Demo',
-  },
-  {
-    id: 'demo-4',
-    thumb: 'https://images.unsplash.com/photo-1447752875215-b9821bf06482?w=400',
-    full: 'https://images.unsplash.com/photo-1447752875215-b9821bf06482?w=1200',
-    title: 'Minimal workspace',
-    author: 'Demo',
-  },
-]
+/** Always same-origin — proxied in dev (Vite) and Docker (nginx). */
+const OPENVERSE_BASE = '/openverse-api/v1/images/'
+
+function dedupeItems(items: OmniItem[]): OmniItem[] {
+  const seen = new Set<string>()
+  return items.filter((item) => {
+    const key = item.thumb ?? item.id
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
 
 async function searchUnsplash(q: string, key?: string) {
   if (!key) return []
-  const res = await fetch(
-    `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&per_page=8&client_id=${key}`,
-  )
-  if (!res.ok) return []
-  const data = await res.json()
-  return (data.results ?? []).map(
-    (p: { id: string; urls: { small: string; regular: string }; alt_description?: string; user: { name: string } }) => ({
-      id: `unsplash-${p.id}`,
-      kind: 'image' as const,
-      title: p.alt_description ?? 'Photo',
-      thumb: p.urls.small,
-      previewUrl: p.urls.regular,
-      source: 'Unsplash',
-      attribution: p.user.name,
-      payload: { url: p.urls.regular, attribution: p.user.name },
-    }),
-  )
+  try {
+    const res = await fetch(
+      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&per_page=8&client_id=${key}`,
+    )
+    if (!res.ok) return []
+    const data = await res.json()
+    return (data.results ?? []).map(
+      (p: { id: string; urls: { small: string; regular: string }; alt_description?: string; user: { name: string } }) => ({
+        id: `unsplash-${p.id}`,
+        kind: 'image' as const,
+        title: p.alt_description ?? 'Photo',
+        thumb: p.urls.small,
+        previewUrl: p.urls.regular,
+        source: 'Unsplash',
+        attribution: p.user.name,
+        payload: { url: p.urls.regular, attribution: p.user.name },
+      }),
+    )
+  } catch {
+    return []
+  }
 }
 
 async function searchPexels(q: string, key?: string) {
   if (!key) return []
-  const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&per_page=8`, {
-    headers: { Authorization: key },
-  })
-  if (!res.ok) return []
-  const data = await res.json()
-  return (data.photos ?? []).map(
-    (p: { id: number; src: { medium: string; large: string }; alt?: string; photographer: string }) => ({
-      id: `pexels-${p.id}`,
-      kind: 'image' as const,
-      title: p.alt ?? 'Photo',
-      thumb: p.src.medium,
-      previewUrl: p.src.large,
-      source: 'Pexels',
-      attribution: p.photographer,
-      payload: { url: p.src.large, attribution: p.photographer },
-    }),
-  )
+  try {
+    const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&per_page=8`, {
+      headers: { Authorization: key },
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return (data.photos ?? []).map(
+      (p: { id: number; src: { medium: string; large: string }; alt?: string; photographer: string }) => ({
+        id: `pexels-${p.id}`,
+        kind: 'image' as const,
+        title: p.alt ?? 'Photo',
+        thumb: p.src.medium,
+        previewUrl: p.src.large,
+        source: 'Pexels',
+        attribution: p.photographer,
+        payload: { url: p.src.large, attribution: p.photographer },
+      }),
+    )
+  } catch {
+    return []
+  }
+}
+
+/** Free CC image search — no API key (Openverse / Creative Commons). */
+async function searchOpenverse(q: string): Promise<OmniItem[]> {
+  try {
+    const url = `${OPENVERSE_BASE}?q=${encodeURIComponent(q)}&page_size=12`
+    const res = await fetch(url)
+    if (!res.ok) return []
+    const data = (await res.json()) as {
+      results?: Array<{
+        id: string
+        title?: string
+        url?: string
+        thumbnail?: string
+        creator?: string
+        creator_url?: string
+      }>
+    }
+    return (data.results ?? [])
+      .filter((r) => r.url)
+      .map((r) => ({
+        id: `openverse-${r.id}`,
+        kind: 'image' as const,
+        title: r.title?.trim() || q,
+        thumb: r.thumbnail ?? r.url!,
+        previewUrl: r.url!,
+        source: 'Openverse',
+        attribution: r.creator ?? 'CC',
+        payload: { url: r.url!, attribution: r.creator, creatorUrl: r.creator_url },
+      }))
+  } catch {
+    return []
+  }
 }
 
 export async function searchImages(query: string): Promise<ProviderResult | null> {
@@ -81,44 +105,38 @@ export async function searchImages(query: string): Promise<ProviderResult | null
   const unsplashKey = getProviderKey('unsplash')
   const pexelsKey = getProviderKey('pexels')
 
-  if (!unsplashKey && !pexelsKey) {
-    const demo = DEMO_IMAGES.filter((d) => d.title.toLowerCase().includes(q.toLowerCase()) || q.length < 4)
+  const [unsplash, pexels, openverse] = await Promise.all([
+    searchUnsplash(q, unsplashKey),
+    searchPexels(q, pexelsKey),
+    searchOpenverse(q),
+  ])
+
+  const merged = dedupeItems([...unsplash, ...pexels, ...openverse])
+
+  if (merged.length === 0) {
     return {
       section: {
         id: 'images',
         title: 'Images',
-        source: 'Demo (connect Unsplash / Pexels in Connections)',
-        needsKey: 'unsplash',
-        items: (demo.length ? demo : DEMO_IMAGES).map((d) => ({
-          id: d.id,
-          kind: 'image' as const,
-          title: d.title,
-          thumb: d.thumb,
-          previewUrl: d.full,
-          source: 'Demo',
-          attribution: d.author,
-          payload: { url: d.full, attribution: d.author },
-        })),
+        source: 'No matches',
+        error: `No photos found for "${q}". Try different words or add Unsplash/Pexels keys in Connections for more results.`,
+        items: [],
+        needsKey: !unsplashKey && !pexelsKey ? 'unsplash' : undefined,
       },
     }
   }
 
-  const [u, p] = await Promise.all([searchUnsplash(q, unsplashKey), searchPexels(q, pexelsKey)])
-  const seen = new Set<string>()
-  const merged = [...u, ...p].filter((item) => {
-    const h = item.thumb ?? item.id
-    if (seen.has(h)) return false
-    seen.add(h)
-    return true
-  })
-
-  if (merged.length === 0) return null
+  const sources: string[] = []
+  if (unsplash.length) sources.push('Unsplash')
+  if (pexels.length) sources.push('Pexels')
+  if (openverse.length && !unsplash.length && !pexels.length) sources.push('Openverse (free)')
+  else if (openverse.length) sources.push('Openverse')
 
   return {
     section: {
       id: 'images',
       title: 'Images',
-      source: [unsplashKey && 'Unsplash', pexelsKey && 'Pexels'].filter(Boolean).join(' + '),
+      source: sources.join(' + ') || 'Search',
       items: merged.slice(0, 12),
       more: merged.length > 12,
     },

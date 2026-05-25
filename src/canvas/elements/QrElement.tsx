@@ -21,21 +21,23 @@ export function QrElement({ element, selected }: Props) {
   return (
     <div
       className={cn(
-        'flex h-full w-full flex-col items-center justify-center p-3',
+        'flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-lg bg-white',
         selected && 'ring-2 ring-[var(--accent)] ring-offset-2',
       )}
-      style={{
-        background: element.style.bg ?? '#fff',
-        borderRadius: element.style.borderRadius ?? 8,
-        boxShadow: 'var(--shadow-md)',
-      }}
     >
       {dataUrl ? (
-        <img src={dataUrl} alt={`QR code for ${url}`} className="max-h-[80%] w-full object-contain" />
+        <img
+          src={dataUrl}
+          alt={`QR code for ${url}`}
+          className="min-h-0 flex-1 w-full object-contain p-2"
+          draggable={false}
+        />
       ) : (
-        <div className="h-24 w-24 animate-pulse rounded bg-[var(--bg-muted)]" />
+        <div className="min-h-0 flex-1 w-full animate-pulse bg-[var(--bg-muted)]" />
       )}
-      <p className="mt-2 max-w-full truncate text-[10px] text-[var(--text-tertiary)]">{url}</p>
+      <p className="max-w-full shrink-0 truncate px-2 pb-1.5 text-[9px] text-[var(--text-tertiary)]">
+        {url}
+      </p>
     </div>
   )
 }

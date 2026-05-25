@@ -5,6 +5,7 @@ import { compare, hash } from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts'
 import { create, getNumericDate, verify } from 'https://deno.land/x/djwt@v3.0.2/mod.ts'
 
 import { handleAiChat } from './ai.ts'
+import { proxyAssetUrl, proxyMicrolink, proxyOpenverse } from './proxy.ts'
 import { renderResponse } from './render.ts'
 import { buildRssFeed } from './rss.ts'
 import { handlePing, getStatsSummary } from './stats.ts'
@@ -151,6 +152,20 @@ async function handler(req: Request): Promise<Response> {
 
   const url = new URL(req.url)
   const path = url.pathname
+
+  if (req.method === 'GET' && path === '/asset-proxy') {
+    const target = url.searchParams.get('url')
+    if (!target) return bad('Missing url')
+    return proxyAssetUrl(target, cors)
+  }
+
+  if (req.method === 'GET' && path.startsWith('/openverse-api')) {
+    return proxyOpenverse(path.replace(/^\/openverse-api/, '') + url.search, cors)
+  }
+
+  if (req.method === 'GET' && path.startsWith('/microlink-api')) {
+    return proxyMicrolink(url.search, cors)
+  }
 
   // Auth
   if (req.method === 'POST' && path === '/auth/signup') return handleSignup(await req.json())

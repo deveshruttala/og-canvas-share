@@ -29,7 +29,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       setAuthToken(token)
       set({ user, loading: false })
     } catch (e) {
-      set({ error: e instanceof Error ? e.message : 'Login failed', loading: false })
+      set({ error: formatAuthError(e, 'Login failed'), loading: false })
       throw e
     }
   },
@@ -42,7 +42,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       setAuthToken(token)
       set({ user, loading: false })
     } catch (e) {
-      set({ error: e instanceof Error ? e.message : 'Signup failed', loading: false })
+      set({ error: formatAuthError(e, 'Signup failed'), loading: false })
       throw e
     }
   },
@@ -65,5 +65,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user })
   },
 }))
+
+function formatAuthError(e: unknown, fallback: string): string {
+  if (!(e instanceof Error)) return fallback
+  const msg = e.message
+  if (msg === 'NetworkError when attempting to fetch resource.' || msg.includes('Failed to fetch')) {
+    return 'Cannot reach the API server. Use local auth (VITE_AUTH_MODE=local) or start the backend on port 8000.'
+  }
+  return msg || fallback
+}
 
 export { isLocalAuth }

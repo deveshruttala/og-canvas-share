@@ -1,3 +1,4 @@
+import { getProxiedAssetUrl } from '@/lib/asset-proxy'
 import { clamp } from '@/lib/cn'
 
 const MAX_LONG_EDGE = 1400
@@ -63,4 +64,29 @@ export function blobToDataUrl(blob: Blob): Promise<string> {
     reader.onerror = reject
     reader.readAsDataURL(blob)
   })
+}
+
+/** Best-effort dimensions for images (uses proxy for remote http URLs). */
+export function probeImageSize(url: string): Promise<{ w: number; h: number }> {
+  const src = url.startsWith('data:') || url.startsWith('blob:') ? url : getProxiedAssetUrl(url)
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () =>
+      resolve({
+        w: img.naturalWidth || 800,
+        h: img.naturalHeight || 600,
+      })
+    img.onerror = () => reject(new Error('Could not load image'))
+    img.src = src
+  })
+}
+
+export function dataUrlToBlob(dataUrl: string): Blob {
+  const [header, base64] = dataUrl.split(',')
+  const mime = header.match(/:(.*?);/)?.[1] ?? 'image/png'
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return new Blob([bytes], { type: mime })
 }

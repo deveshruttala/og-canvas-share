@@ -22,7 +22,7 @@ export async function insertOmniItem(item: OmniItem) {
       }
       case 'gif': {
         const url = String(item.payload?.url ?? item.previewUrl ?? '')
-        wallActions.addGifAt(url, x, y)
+        await wallActions.addGifAt(url, x, y)
         break
       }
       case 'audio': {
@@ -64,7 +64,13 @@ export async function insertOmniItem(item: OmniItem) {
         break
       }
       case 'link':
-        if (item.url) await wallActions.addLink(item.url, x, y)
+        if (item.url) {
+          const payload = item.payload as { title?: string; description?: string } | undefined
+          await wallActions.addLink(item.url, x, y, {
+            title: item.title ?? payload?.title,
+            description: item.subtitle ?? payload?.description,
+          })
+        }
         break
       default:
         break

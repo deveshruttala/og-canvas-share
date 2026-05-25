@@ -2,45 +2,36 @@ import { useEffect, useState } from 'react'
 import { X, Search } from 'lucide-react'
 import { useUiStore } from '@/store/ui.store'
 import { wallActions } from '@/editor/wall-actions'
-
-type GifResult = { id: string; url: string; title: string }
-
-const GIPHY_KEY = import.meta.env.VITE_GIPHY_API_KEY ?? 'GlVGYHkr3WSBnllca54iNt0yFyLpWLah'
+import { fetchGifPickerResults } from '@/providers/gifs'
 
 export function GifPicker() {
   const open = useUiStore((s) => s.showGifPicker)
   const setOpen = useUiStore((s) => s.setShowGifPicker)
-  const addGifAt = (url: string) => wallActions.addGif(url)
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<GifResult[]>([])
+  const [results, setResults] = useState<
+    Awaited<ReturnType<typeof fetchGifPickerResults>>['items']
+  >([])
   const [loading, setLoading] = useState(false)
+  const [hint, setHint] = useState<string | undefined>()
+  const [source, setSource] = useState<string | undefined>()
 
   useEffect(() => {
     if (!open) return
-    void fetchGifs(query || 'trending')
+    void runSearch('trending')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  async function fetchGifs(q: string) {
+  async function runSearch(q: string) {
     setLoading(true)
+    setHint(undefined)
     try {
-      const endpoint =
-        q === 'trending'
-          ? `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_KEY}&limit=24&rating=g`
-          : `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(q)}&limit=24&rating=g`
-      const res = await fetch(endpoint)
-      const data = await res.json()
-      setResults(
-        (data.data ?? []).map(
-          (g: { id: string; title: string; images: { fixed_height: { url: string } } }) => ({
-            id: g.id,
-            title: g.title,
-            url: g.images.fixed_height.url,
-          }),
-        ),
-      )
+      const { items, error, source: src } = await fetchGifPickerResults(q)
+      setResults(items)
+      setHint(error)
+      setSource(src)
     } catch {
       setResults([])
+      setHint('GIF search failed — check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -66,22 +57,35 @@ export function GifPicker() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && void fetchGifs(query || 'trending')}
-            placeholder="Search Giphy…"
+            onKeyDown={(e) => e.key === 'Enter' && void runSearch(query.trim() || 'trending')}
+            placeholder="Search GIFs (e.g. train, celebration)…"
             className="flex-1 bg-transparent text-sm outline-none"
           />
           <button
             type="button"
-            onClick={() => void fetchGifs(query || 'trending')}
+            onClick={() => void runSearch(query.trim() || 'trending')}
             className="rounded-[var(--r-pill)] bg-[var(--accent)] px-3 py-1 text-xs font-semibold text-white"
           >
             Search
           </button>
         </div>
+        {source && (
+          <p className="border-b border-[var(--bg-muted)] px-4 py-1.5 text-[10px] text-[var(--text-tertiary)]">
+            {source}
+          </p>
+        )}
+        {hint && (
+          <p className="border-b border-[var(--bg-muted)] px-4 py-2 text-xs text-amber-700">{hint}</p>
+        )}
         <div className="grid flex-1 grid-cols-3 gap-2 overflow-y-auto p-3 sm:grid-cols-4">
           {loading && (
             <p className="col-span-full py-8 text-center text-sm text-[var(--text-secondary)]">
               Loading…
+            </p>
+          )}
+          {!loading && results.length === 0 && (
+            <p className="col-span-full py-8 text-center text-sm text-[var(--text-secondary)]">
+              No GIFs found. Try another word or add a Giphy API key in Connections.
             </p>
           )}
           {!loading &&
@@ -91,11 +95,16 @@ export function GifPicker() {
                 type="button"
                 className="aspect-square overflow-hidden rounded-[var(--r-md)] bg-[var(--bg-subtle)] hover:ring-2 hover:ring-[var(--accent)]"
                 onClick={() => {
-                  addGifAt(gif.url)
+                  void wallActions.addGifAt(gif.url)
                   setOpen(false)
                 }}
               >
-                <img src={gif.url} alt={gif.title} className="h-full w-full object-cover" loading="lazy" />
+                <img
+                  src={gif.thumb}
+                  alt={gif.title}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
               </button>
             ))}
         </div>

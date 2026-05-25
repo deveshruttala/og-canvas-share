@@ -1,12 +1,26 @@
 /**
  * Dock + paste actions backed by the tldraw editor instance.
  */
-import { createEmptyBookmarkShape, createShapeId, toRichText, type Editor } from 'tldraw'
+import { createShapeId, toRichText, type Editor } from 'tldraw'
+import {
+  createStickyNoteShape,
+  createTextBoxShape,
+  setTextDisplayMode,
+  updateTextTypography,
+} from '@/editor/wall-text-actions'
+import type { WallTextBoxStyle } from '@/lib/wall-text-style'
 import { AssetRecordType } from '@tldraw/tlschema'
-import { getWallEditor, wallCenter, WALL_FRAME_ID, ZOOM_STEPS } from '@/editor/wall-editor-api'
+import {
+  getWallEditor,
+  wallCenter,
+  WALL_FRAME_ID,
+  ZOOM_STEPS,
+  zoomToWallPage,
+} from '@/editor/wall-editor-api'
+import { createWallLinkShape, wallHostGeoProps } from '@/editor/wall-host-shape'
 import { detectLinkPlatform, getEmbedUrl } from '@/lib/link-resolver'
-import { blobToDataUrl, compressImage } from '@/lib/compress-image'
-import QRCode from 'qrcode'
+import { blobToDataUrl, compressImage, probeImageSize } from '@/lib/compress-image'
+import { fetchExternalAssetAsDataUrl, isRemoteHttpUrl } from '@/lib/asset-proxy'
 import type { CatalogWidget } from '@/widgets/catalog'
 
 export type LinkTo = {
@@ -82,6 +96,10 @@ function shapeLabel(shape: WallShapeLike): string {
     return data.caption ?? 'Polaroid'
   }
   if (meta?.wallType === 'qr') return 'QR code'
+  if (meta?.wallType === 'link') {
+    const data = meta.wallData as { title?: string; url?: string }
+    return data.title ?? data.url ?? 'Link'
+  }
   if (shape.type === 'embed' || shape.type === 'bookmark') return shapeUrl(props)
   if (shape.type === 'image') return String(props.altText ?? 'Image')
   if (shape.type === 'note') return 'Sticky note'
@@ -105,8 +123,9 @@ export function getWallShapeKind(shape: WallShapeLike): string {
   if (meta?.wallType === 'progress') return 'Progress'
   if (meta?.wallType === 'soundpad') return 'Sound Pad'
   if (meta?.wallType === 'polaroid') return 'Polaroid'
-  if (shape.type === 'note') return 'Sticky Note'
-  if (shape.type === 'text') return 'Text'
+  if (meta?.wallType === 'link') return 'Link'
+  if (shape.type === 'note') return 'Sticky note'
+  if (shape.type === 'text') return 'Text box'
   if (shape.type === 'image') return 'Image'
   if (shape.type === 'embed') return 'Embed'
   if (shape.type === 'bookmark') return 'Link'
@@ -120,48 +139,41 @@ export function getWallShapeLabel(shape: WallShapeLike): string {
 }
 
 export const wallActions = {
-  addSticky(text = 'Double-click to edit', color: 'yellow' | 'light-green' | 'light-blue' | 'light-violet' | 'light-red' | 'orange' = 'yellow', x?: number, y?: number) {
+  addTextBox(text = 'Type here', x?: number, y?: number, style?: Partial<WallTextBoxStyle>) {
     const { x: px, y: py } = place(x, y)
-    ed().createShape({
-      id: createShapeId(),
-      type: 'note',
-      x: px,
-      y: py,
-      rotation: ((Math.random() * 4 - 2) * Math.PI) / 180,
-      props: {
-        color,
-        size: 'm',
-        richText: toRichText(text),
-        align: 'middle',
-        verticalAlign: 'middle',
-        font: 'draw',
-        fontSizeAdjustment: 0,
-        growY: 0,
-        url: '',
-        scale: 1,
-      },
-    })
-    ed().setCurrentTool('select')
+    const editor = ed()
+    const id = createTextBoxShape(editor, { x: px - 20, y: py - 16, text, style })
+    editor.select(id)
+    editor.setCurrentTool('select')
+  },
+
+  /** @deprecated Use addTextBox — kept for explicit sticky notes */
+  addSticky(
+    text = 'Double-click to edit',
+    color: 'yellow' | 'light-green' | 'light-blue' | 'light-violet' | 'light-red' | 'orange' = 'yellow',
+    x?: number,
+    y?: number,
+  ) {
+    const { x: px, y: py } = place(x, y)
+    const editor = ed()
+    const id = createStickyNoteShape(editor, { x: px, y: py, text, color })
+    editor.select(id)
+    editor.setCurrentTool('select')
   },
 
   addTextBlock(text = 'Heading', size: 's' | 'm' | 'l' | 'xl' = 'l', x?: number, y?: number) {
-    const { x: px, y: py } = place(x, y)
-    ed().createShape({
-      id: createShapeId(),
-      type: 'text',
-      x: px,
-      y: py,
-      props: {
-        richText: toRichText(text),
-        color: 'black',
-        size,
-        font: 'sans',
-        textAlign: 'start',
-        autoSize: true,
-        w: 280,
-        scale: 1,
-      },
-    })
+    wallActions.addTextBox(text, x, y, { size, font: 'sans' })
+  },
+
+  setTextBoxDisplayMode(shapeId: string, mode: WallTextBoxStyle['mode'], extras?: Partial<WallTextBoxStyle>) {
+    return setTextDisplayMode(ed(), shapeId, mode, extras)
+  },
+
+  updateTextBoxTypography(
+    shapeIds: string[],
+    patch: Parameters<typeof updateTextTypography>[2],
+  ) {
+    updateTextTypography(ed(), shapeIds, patch)
   },
 
   async addImageFromFile(file: File) {
@@ -196,23 +208,7 @@ export const wallActions = {
 
   addGif(url: string) {
     const { x, y } = place()
-    const assetId = AssetRecordType.createId()
-    ed().createAssets([
-      {
-        id: assetId,
-        type: 'image',
-        typeName: 'asset',
-        props: { name: 'gif', src: url, w: 400, h: 300, mimeType: 'image/gif', isAnimated: true },
-        meta: {},
-      },
-    ])
-    ed().createShape({
-      id: createShapeId(),
-      type: 'image',
-      x: x - 160,
-      y: y - 120,
-      props: { assetId, w: 320, h: 240, playing: true, url: '', crop: null, flipX: false, flipY: false, altText: 'GIF' },
-    })
+    void wallActions.addGifAt(url, x, y)
   },
 
   addEmoji(emoji: string, x?: number, y?: number, linkTo?: LinkTo) {
@@ -266,7 +262,12 @@ export const wallActions = {
     })
   },
 
-  async addLink(url: string, x?: number, y?: number) {
+  async addLink(
+    url: string,
+    x?: number,
+    y?: number,
+    hints?: { title?: string; description?: string; image?: string },
+  ) {
     const normalized = /^https?:\/\//i.test(url) ? url : `https://${url}`
     const platform = detectLinkPlatform(normalized)
     const embedUrl = getEmbedUrl(normalized, platform)
@@ -287,7 +288,7 @@ export const wallActions = {
       return
     }
 
-    createEmptyBookmarkShape(ed(), normalized, { x: px, y: py })
+    await createWallLinkShape(ed(), normalized, { x: px, y: py }, hints)
   },
 
   async addLinkAt(url: string, x?: number, y?: number) {
@@ -302,51 +303,23 @@ export const wallActions = {
       type: 'geo',
       x: x - 160,
       y: y - 60,
-      props: {
-        geo: 'rectangle',
-        w: 320,
-        h: 120,
-        dash: 'draw',
-        color: 'black',
-        fill: 'solid',
-        size: 's',
-        font: 'sans',
-        align: 'start',
-        verticalAlign: 'start',
-        growY: 0,
-        url: '',
-        scale: 1,
-        richText: toRichText(title ?? file.name.replace(/\.[^.]+$/, '')),
-      },
+      opacity: 0.001,
+      props: wallHostGeoProps(320, 120),
       meta: { wallType: 'audio', wallData: { src, title: title ?? file.name } },
     })
   },
 
   async addQr(url: string, x?: number, y?: number) {
-    const dataUrl = await QRCode.toDataURL(url, { margin: 1, width: 256 })
     const { x: px, y: py } = place(x, y)
+    const size = 180
     ed().createShape({
       id: createShapeId(),
       type: 'geo',
-      x: px - 90,
-      y: py - 100,
-      props: {
-        geo: 'rectangle',
-        w: 180,
-        h: 200,
-        dash: 'draw',
-        color: 'white',
-        fill: 'solid',
-        size: 's',
-        font: 'mono',
-        align: 'middle',
-        verticalAlign: 'middle',
-        growY: 0,
-        url: '',
-        scale: 1,
-        richText: toRichText(''),
-      },
-      meta: { wallType: 'qr', wallData: { url, dataUrl } },
+      x: px - size / 2,
+      y: py - size / 2,
+      opacity: 0.001,
+      props: wallHostGeoProps(size, size),
+      meta: { wallType: 'qr', wallData: { url } },
     })
   },
 
@@ -363,22 +336,8 @@ export const wallActions = {
       type: 'geo',
       x: px - w / 2,
       y: py - h / 2,
-      props: {
-        geo: 'rectangle',
-        w,
-        h,
-        dash: 'draw',
-        color: 'black',
-        fill: 'solid',
-        size: 's',
-        font: 'sans',
-        align: 'start',
-        verticalAlign: 'start',
-        growY: 0,
-        url: '',
-        scale: 1,
-        richText: toRichText(''),
-      },
+      opacity: 0.001,
+      props: wallHostGeoProps(w, h),
       meta: { wallType: 'widget', wallData: { type, ...extra } },
     })
   },
@@ -417,7 +376,7 @@ export const wallActions = {
   },
 
   fitWall() {
-    ed().zoomToFit({ animation: { duration: 300 } })
+    zoomToWallPage(ed(), { animate: true })
   },
 
   resetZoom() {
@@ -429,7 +388,7 @@ export const wallActions = {
   },
 
   async pasteText(text: string) {
-    wallActions.addSticky(text.slice(0, 2000))
+    wallActions.addTextBox(text.slice(0, 2000))
   },
 
   async pasteImageFile(file: File) {
@@ -461,14 +420,23 @@ export const wallActions = {
   },
 
   addEmbed(url: string) {
+    const normalized = /^https?:\/\//i.test(url) ? url : `https://${url}`
+    const platform = detectLinkPlatform(normalized)
+    const embedUrl = getEmbedUrl(normalized, platform)
     const { x, y } = place()
-    ed().createShape({
-      id: createShapeId(),
-      type: 'embed',
-      x: x - 250,
-      y: y - 150,
-      props: { w: 500, h: 300, url },
-    })
+
+    if (embedUrl && ['youtube', 'spotify', 'vimeo', 'soundcloud'].includes(platform)) {
+      ed().createShape({
+        id: createShapeId(),
+        type: 'embed',
+        x: x - 250,
+        y: y - 150,
+        props: { w: 500, h: 300, url: embedUrl },
+      })
+      return
+    }
+
+    void wallActions.addLink(normalized, x, y)
   },
 
   autoArrange() {
@@ -486,16 +454,23 @@ export const wallActions = {
       shapes.forEach((shape, idx) => {
         const col = idx % 3
         const row = Math.floor(idx / 3)
+        const bounds = editor.getShapePageBounds(shape.id)
+        const w = bounds?.w ?? 280
+        const h = bounds?.h ?? 200
+        const cellW = Math.max(colWidth, w + padding)
+        const cellH = Math.max(rowHeight, h + padding)
+        const x = startX + col * cellW
+        const y = startY + row * cellH
         editor.updateShape({
           id: shape.id,
           type: shape.type,
-          x: startX + col * (colWidth + padding),
-          y: startY + row * (rowHeight + padding),
-          rotation: ((idx % 2 === 0 ? 1 : -1) * (1 + (idx % 3)) * Math.PI) / 180,
+          x,
+          y,
+          rotation: 0,
         })
       })
     })
-    editor.zoomToFit({ animation: { duration: 300 } })
+    zoomToWallPage(editor)
   },
 
   focusShape(id: string) {
@@ -524,15 +499,33 @@ export const wallActions = {
     }
   },
 
-  addGifAt(url: string, x?: number, y?: number) {
+  async addGifAt(url: string, x?: number, y?: number) {
     const { x: px, y: py } = place(x, y)
+    let src = url
+    let mimeType = 'image/gif'
+    if (isRemoteHttpUrl(url)) {
+      try {
+        src = await fetchExternalAssetAsDataUrl(url)
+      } catch {
+        src = url
+      }
+    }
+    let w = 400
+    let h = 300
+    try {
+      const dims = await probeImageSize(src)
+      w = dims.w
+      h = dims.h
+    } catch {
+      /* defaults */
+    }
     const assetId = AssetRecordType.createId()
     ed().createAssets([
       {
         id: assetId,
         type: 'image',
         typeName: 'asset',
-        props: { name: 'gif', src: url, w: 400, h: 300, mimeType: 'image/gif', isAnimated: true },
+        props: { name: 'gif', src, w, h, mimeType, isAnimated: true },
         meta: {},
       },
     ])
@@ -546,18 +539,51 @@ export const wallActions = {
   },
 
   async addImageFromUrl(url: string, x?: number, y?: number, attribution?: string) {
-    const res = await fetch(url)
-    if (!res.ok) throw new Error('Could not fetch image URL')
-    const blob = await res.blob()
+    const trimmed = url.trim()
+    if (!trimmed) throw new Error('Image URL is empty')
+
     const { x: px, y: py } = place(x, y)
-    const src = await blobToDataUrl(blob)
+    let w = 800
+    let h = 600
+    let src = trimmed
+    let mimeType = 'image/jpeg'
+
+    if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
+      try {
+        const dims = await probeImageSize(trimmed)
+        w = dims.w
+        h = dims.h
+        if (trimmed.startsWith('data:')) {
+          mimeType = trimmed.slice(5, trimmed.indexOf(';')) || mimeType
+        }
+      } catch {
+        /* keep defaults */
+      }
+    } else if (isRemoteHttpUrl(trimmed)) {
+      try {
+        src = await fetchExternalAssetAsDataUrl(trimmed)
+        const dims = await probeImageSize(src)
+        w = dims.w
+        h = dims.h
+        mimeType =
+          src.startsWith('data:image/png') ? 'image/png'
+          : src.startsWith('data:image/webp') ? 'image/webp'
+          : src.startsWith('data:image/gif') ? 'image/gif'
+          : 'image/jpeg'
+      } catch {
+        throw new Error('Could not load image from URL — try another source or paste a direct image link')
+      }
+    } else {
+      throw new Error('Enter a valid image URL')
+    }
+
     const assetId = AssetRecordType.createId()
     ed().createAssets([
       {
         id: assetId,
         type: 'image',
         typeName: 'asset',
-        props: { name: 'image', src, w: 800, h: 600, mimeType: blob.type, isAnimated: false },
+        props: { name: 'image', src, w, h, mimeType, isAnimated: false },
         meta: {},
       },
     ])
@@ -584,22 +610,8 @@ export const wallActions = {
       type: 'geo',
       x: px - 160,
       y: py - 70,
-      props: {
-        geo: 'rectangle',
-        w: 320,
-        h: 140,
-        dash: 'draw',
-        color: 'black',
-        fill: 'solid',
-        size: 's',
-        font: 'sans',
-        align: 'start',
-        verticalAlign: 'start',
-        growY: 0,
-        url: '',
-        scale: 1,
-        richText: toRichText(''),
-      },
+      opacity: 0.001,
+      props: wallHostGeoProps(320, 140),
       meta: { wallType: 'progress', wallData: { title, current, max, color } },
     })
   },
@@ -611,22 +623,8 @@ export const wallActions = {
       type: 'geo',
       x: px - 120,
       y: py - 90,
-      props: {
-        geo: 'rectangle',
-        w: 240,
-        h: 180,
-        dash: 'draw',
-        color: 'black',
-        fill: 'solid',
-        size: 's',
-        font: 'sans',
-        align: 'start',
-        verticalAlign: 'start',
-        growY: 0,
-        url: '',
-        scale: 1,
-        richText: toRichText(''),
-      },
+      opacity: 0.001,
+      props: wallHostGeoProps(240, 180),
       meta: { wallType: 'soundpad', wallData: { label, frequency, wave } },
     })
   },
@@ -638,22 +636,8 @@ export const wallActions = {
       type: 'geo',
       x: px - 110,
       y: py - 140,
-      props: {
-        geo: 'rectangle',
-        w: 220,
-        h: 280,
-        dash: 'draw',
-        color: 'white',
-        fill: 'solid',
-        size: 's',
-        font: 'sans',
-        align: 'start',
-        verticalAlign: 'start',
-        growY: 0,
-        url: '',
-        scale: 1,
-        richText: toRichText(''),
-      },
+      opacity: 0.001,
+      props: wallHostGeoProps(220, 280),
       meta: { wallType: 'polaroid', wallData: { src, caption } },
     })
   },
@@ -681,7 +665,7 @@ export const wallActions = {
   },
 
   resetPan() {
-    ed().zoomToFit({ animation: { duration: 300 } })
+    zoomToWallPage(ed(), { animate: true })
   },
 
   async addStreamingAudio(
@@ -695,22 +679,8 @@ export const wallActions = {
       type: 'geo',
       x: px - 160,
       y: py - 60,
-      props: {
-        geo: 'rectangle',
-        w: 320,
-        h: 120,
-        dash: 'draw',
-        color: 'black',
-        fill: 'solid',
-        size: 's',
-        font: 'sans',
-        align: 'start',
-        verticalAlign: 'start',
-        growY: 0,
-        url: '',
-        scale: 1,
-        richText: toRichText(data.title ?? 'Audio'),
-      },
+      opacity: 0.001,
+      props: wallHostGeoProps(320, 120),
       meta: {
         wallType: 'audio',
         wallData: {
@@ -731,7 +701,16 @@ export const wallActions = {
 
     switch (widget.template) {
       case 'clock':
-        wallActions.addWidget('clock', { location: str('location', widget.name), label: widget.name }, x, y)
+        wallActions.addWidget(
+          'clock',
+          {
+            location: str('location', widget.name),
+            label: widget.name,
+            timezone: str('timezone', ''),
+          },
+          x,
+          y,
+        )
         break
       case 'weather':
         wallActions.addWidget('weather', { location: str('location', 'Your City') }, x, y)

@@ -1,7 +1,7 @@
 /**
  * Floating inspector HUD — rotation, layers, lock, delete, gradients & borders.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Lock, Unlock, ArrowDown, Link2, Palette, ExternalLink, Rocket } from 'lucide-react'
 import { useEditor, useValue } from '@tldraw/editor'
 import { WALL_FRAME_ID } from '@/editor/wall-editor-api'
@@ -9,6 +9,15 @@ import { getWallShapeKind, getWallShapeLabel, wallActions } from '@/editor/wall-
 import { createStandaloneWidget } from '@/lib/widget-store'
 import { wallMetaToWidgetConfig } from '@/lib/widget-render'
 import { useAuthStore } from '@/store/auth.store'
+import {
+  CARD_BG_PRESETS,
+  FONT_OPTIONS,
+  readWallTextBoxStyle,
+  SIZE_OPTIONS,
+  STICKY_COLOR_HEX,
+  TEXT_COLOR_OPTIONS,
+  type WallTextDisplayMode,
+} from '@/lib/wall-text-style'
 import { cn } from '@/lib/cn'
 
 const GRADIENTS = [
@@ -41,12 +50,22 @@ export function WallInspector() {
     [editor],
   )
 
+  const selectionKey = selection?.ids.join(',') ?? ''
+  const primary = selection?.shapes[0]
+  const isTextSelection =
+    primary?.type === 'text' || primary?.type === 'note'
+  const multiSelected = (selection?.ids.length ?? 0) > 1
+
+  useEffect(() => {
+    if (isTextSelection && !multiSelected && selectionKey) {
+      setStyleExpandedFor(selectionKey)
+    }
+  }, [selectionKey, isTextSelection, multiSelected])
+
   if (!selection) return null
 
-  const selectionKey = selection.ids.join(',')
   const expanded = styleExpandedFor === selectionKey
 
-  const primary = selection.shapes[0]
   if (!primary) return null
 
   const rotationDeg = Math.round((primary.rotation * 180) / Math.PI)
@@ -62,9 +81,20 @@ export function WallInspector() {
   const isPolaroid = wallType === 'polaroid'
   const isAudio = wallType === 'audio'
   const isQr = wallType === 'qr'
+  const isLink = wallType === 'link'
   const isImage = primary.type === 'image'
   const isNote = primary.type === 'note'
-  const isSticky = isNote || primary.type === 'text'
+  const isTextBox = primary.type === 'text'
+  const isTextContent = isNote || isTextBox
+  const textStyle = isTextContent
+    ? readWallTextBoxStyle({
+        ...meta,
+        wallTextBox: {
+          ...readWallTextBoxStyle(meta),
+          mode: isNote ? 'sticky' : readWallTextBoxStyle(meta).mode,
+        },
+      })
+    : null
   const kind = getWallShapeKind(primary)
   const label = getWallShapeLabel(primary)
   const multi = selection.ids.length > 1
@@ -121,7 +151,13 @@ export function WallInspector() {
     isAudio ||
     isQr ||
     primary.type === 'geo' ||
-    isNote
+    isTextContent
+
+  const setTextMode = (mode: WallTextDisplayMode) => {
+    for (const id of selection.ids) {
+      wallActions.setTextBoxDisplayMode(id, mode, textStyle ?? undefined)
+    }
+  }
 
   return (
     <div className="wall-inspector pointer-events-auto wall-inspector-enter" key={primary.id}>
@@ -135,11 +171,39 @@ export function WallInspector() {
           {!multi && label !== kind && <span className="wall-inspector-chip-sub">{label}</span>}
         </span>
 
-        {linkTo?.url && (
+        {linkTo?.url && !isLink && (
           <span className="wall-inspector-link-badge" title={linkTo.url}>
             <ExternalLink className="h-3 w-3" />
             Linked
           </span>
+        )}
+
+        {isLink && !multi && (
+          <label className="wall-inspector-field min-w-0 max-w-[min(28rem,50vw)] flex-1">
+            <span className="wall-inspector-field-label">Link:</span>
+            <input
+              type="url"
+              defaultValue={String(wallData.url ?? '')}
+              className="wall-inspector-input min-w-[10rem] flex-1"
+              onBlur={async (e) => {
+                const next = e.target.value.trim()
+                if (!next) return
+                const normalized = /^https?:\/\//i.test(next) ? next : `https://${next}`
+                const { fetchLinkMeta } = await import('@/lib/extract-link-meta')
+                const meta = await fetchLinkMeta(normalized)
+                updateMeta({
+                  wallData: {
+                    ...wallData,
+                    url: normalized,
+                    title: meta.title,
+                    description: meta.description,
+                    image: meta.image,
+                  },
+                  linkTo: { url: normalized, openInNewTab: true },
+                })
+              }}
+            />
+          </label>
         )}
 
         <span className="wall-inspector-divider" aria-hidden />
@@ -419,44 +483,194 @@ export function WallInspector() {
             </div>
           )}
 
-          {isSticky && (
-            <div className="wall-inspector-tray-section">
-              <p className="wall-inspector-tray-title">Note color</p>
-              <div className="flex flex-wrap gap-1.5">
-                {(['yellow', 'light-green', 'light-blue', 'light-violet', 'light-red', 'orange'] as const).map(
-                  (color) => (
+          {isTextContent && textStyle && (
+            <>
+              <div className="wall-inspector-tray-section">
+                <p className="wall-inspector-tray-title">Display</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(
+                    [
+                      { id: 'plain' as const, label: 'Plain text' },
+                      { id: 'card' as const, label: 'Card' },
+                      { id: 'sticky' as const, label: 'Sticky note' },
+                    ] as const
+                  ).map((m) => (
                     <button
-                      key={color}
+                      key={m.id}
                       type="button"
                       className={cn(
-                        'h-7 w-7 rounded-full border-2 border-white/10',
-                        primary.type === 'note' &&
-                          (primary.props as { color?: string }).color === color &&
-                          'border-[#beee1d]',
+                        'rounded-lg px-2.5 py-1.5 text-[10px] font-bold',
+                        textStyle.mode === m.id
+                          ? 'bg-[#beee1d] text-black'
+                          : 'bg-white/5 text-neutral-400 hover:bg-white/10',
+                      )}
+                      onClick={() => setTextMode(m.id)}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="wall-inspector-tray-section">
+                <p className="wall-inspector-tray-title">Font</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {FONT_OPTIONS.map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      className={cn(
+                        'rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase',
+                        textStyle.font === f.id
+                          ? 'bg-[#beee1d] text-black'
+                          : 'bg-white/5 text-neutral-400',
+                      )}
+                      onClick={() => wallActions.updateTextBoxTypography(selection.ids, { font: f.id })}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="wall-inspector-tray-section">
+                <p className="wall-inspector-tray-title">Size</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {SIZE_OPTIONS.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={cn(
+                        'min-w-[2rem] rounded-lg px-2.5 py-1 text-[10px] font-bold',
+                        textStyle.size === s.id
+                          ? 'bg-[#beee1d] text-black'
+                          : 'bg-white/5 text-neutral-400',
+                      )}
+                      onClick={() => wallActions.updateTextBoxTypography(selection.ids, { size: s.id })}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="wall-inspector-tray-section">
+                <p className="wall-inspector-tray-title">Text color</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {TEXT_COLOR_OPTIONS.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      title={c.label}
+                      className={cn(
+                        'h-7 w-7 rounded-full border-2',
+                        textStyle.color === c.id ? 'border-[#beee1d]' : 'border-white/15',
+                        c.id === 'white' && 'ring-1 ring-neutral-600',
                       )}
                       style={{
                         background:
-                          color === 'yellow'
-                            ? '#fef08a'
-                            : color === 'light-green'
-                              ? '#bbf7d0'
-                              : color === 'light-blue'
-                                ? '#bfdbfe'
-                                : color === 'light-violet'
-                                  ? '#ddd6fe'
-                                  : color === 'light-red'
-                                    ? '#fecaca'
-                                    : '#fed7aa',
+                          c.id === 'black'
+                            ? '#1a1814'
+                            : c.id === 'grey'
+                              ? '#94a3b8'
+                              : c.id === 'white'
+                                ? '#ffffff'
+                                : c.id === 'red'
+                                  ? '#ef4444'
+                                  : c.id === 'orange'
+                                    ? '#f97316'
+                                    : c.id === 'yellow'
+                                      ? '#eab308'
+                                      : c.id === 'green'
+                                        ? '#22c55e'
+                                        : c.id === 'blue'
+                                          ? '#3b82f6'
+                                          : '#8b5cf6',
                       }}
-                      onClick={() => {
-                        if (primary.type !== 'note') return
-                        updatePrimary({ props: { ...(primary.props as object), color } })
-                      }}
+                      onClick={() => wallActions.updateTextBoxTypography(selection.ids, { color: c.id })}
                     />
-                  ),
-                )}
+                  ))}
+                </div>
               </div>
-            </div>
+
+              {textStyle.mode === 'card' && (
+                <div className="wall-inspector-tray-section">
+                  <p className="wall-inspector-tray-title">Card background</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {CARD_BG_PRESETS.map((bg) => (
+                      <button
+                        key={bg.id}
+                        type="button"
+                        title={bg.label}
+                        className={cn(
+                          'h-8 w-12 rounded-lg border-2',
+                          textStyle.cardBg === bg.css ? 'border-[#beee1d]' : 'border-transparent',
+                        )}
+                        style={{ background: bg.css }}
+                        onClick={() => {
+                          for (const id of selection.ids) {
+                            const shape = editor.getShape(id)
+                            if (!shape) continue
+                            editor.updateShape({
+                              id,
+                              type: shape.type,
+                              meta: {
+                                ...shape.meta,
+                                wallTextBox: {
+                                  ...readWallTextBoxStyle(shape.meta as Record<string, unknown>),
+                                  cardBg: bg.css,
+                                },
+                              },
+                            })
+                          }
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {textStyle.mode === 'sticky' && (
+                <div className="wall-inspector-tray-section">
+                  <p className="wall-inspector-tray-title">Sticky color</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(Object.keys(STICKY_COLOR_HEX) as Array<keyof typeof STICKY_COLOR_HEX>).map(
+                      (color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          className={cn(
+                            'h-7 w-7 rounded-full border-2 border-white/10',
+                            textStyle.stickyColor === color && 'border-[#beee1d]',
+                          )}
+                          style={{ background: STICKY_COLOR_HEX[color] }}
+                          onClick={() => {
+                            if (primary.type === 'note') {
+                              updatePrimary({ props: { ...(primary.props as object), color } })
+                            }
+                            for (const id of selection.ids) {
+                              const shape = editor.getShape(id)
+                              if (!shape) continue
+                              editor.updateShape({
+                                id,
+                                type: shape.type,
+                                meta: {
+                                  ...shape.meta,
+                                  wallTextBox: {
+                                    ...readWallTextBoxStyle(shape.meta as Record<string, unknown>),
+                                    stickyColor: color,
+                                  },
+                                },
+                              })
+                            }
+                          }}
+                        />
+                      ),
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

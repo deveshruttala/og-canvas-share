@@ -1,4 +1,5 @@
 import { toPng } from 'html-to-image'
+import { dataUrlToBlob } from '@/lib/compress-image'
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '@/types/canvas'
 
 export async function exportCanvasToPng(
@@ -25,6 +26,5 @@ export async function exportCanvasToPngBlob(element: HTMLElement): Promise<Blob>
     pixelRatio: 1,
     cacheBust: true,
   })
-  const res = await fetch(dataUrl)
-  return res.blob()
+  return dataUrlToBlob(dataUrl)
 }

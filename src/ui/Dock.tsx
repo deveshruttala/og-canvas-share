@@ -17,9 +17,8 @@ import {
   Plus,
   Maximize2,
 } from 'lucide-react'
-import { useCanvasStore } from '@/store/canvas.store'
 import { useUiStore } from '@/store/ui.store'
-import { themes } from '@/themes'
+import { ThemePicker } from '@/ui/ThemePicker'
 import { wallActions } from '@/editor/wall-actions'
 import { getWallEditor, onZoomChange, onHistoryChange, ZOOM_STEPS } from '@/editor/wall-editor-api'
 import { blobToDataUrl, compressImage } from '@/lib/compress-image'
@@ -30,8 +29,6 @@ function Divider() {
 }
 
 export function Dock() {
-  const doc = useCanvasStore((s) => s.doc)
-  const setTheme = useCanvasStore((s) => s.setTheme)
   const activeTool = useUiStore((s) => s.activeTool)
   const setTool = useUiStore((s) => s.setTool)
   const zoomScale = useUiStore((s) => s.zoomScale)
@@ -48,8 +45,10 @@ export function Dock() {
 
   useEffect(() => {
     const refresh = () => {
-      setCanUndo(wallActions.canUndo())
-      setCanRedo(wallActions.canRedo())
+      const u = wallActions.canUndo()
+      const r = wallActions.canRedo()
+      setCanUndo((prev) => (prev === u ? prev : u))
+      setCanRedo((prev) => (prev === r ? prev : r))
     }
     refresh()
     return onHistoryChange(refresh)
@@ -166,11 +165,11 @@ export function Dock() {
           <button
             type="button"
             className="wall-dock-btn"
-            title="Sticky note"
-            onClick={() => run(() => wallActions.addSticky())}
+            title="Text box"
+            onClick={() => run(() => wallActions.addTextBox())}
           >
             <Type className="h-4 w-4" />
-            <span className="hidden md:inline">Note</span>
+            <span className="hidden md:inline">Text</span>
           </button>
           <button type="button" className="wall-dock-btn" title="Image" onClick={pickImage}>
             <Image className="h-4 w-4" />
@@ -271,18 +270,7 @@ export function Dock() {
           >
             📚 Library
           </button>
-          <select
-            value={doc.theme}
-            onChange={(e) => setTheme(e.target.value as typeof doc.theme)}
-            className="max-w-[140px] truncate rounded-full border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs font-bold text-white outline-none hover:bg-neutral-800"
-            aria-label="Canvas theme"
-          >
-            {Object.values(themes).map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.label}
-              </option>
-            ))}
-          </select>
+          <ThemePicker />
 
           <button type="button" title="Zoom out" onClick={() => wallActions.zoomOut()} className="rounded-full p-2 hover:bg-white/5">
             <Minus className="h-4 w-4 text-neutral-400" />

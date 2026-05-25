@@ -10,13 +10,14 @@ import {
   insertLocalUser,
 } from '@/persist/auth-db'
 import { hashPassword, verifyPassword } from '@/lib/auth/password'
-import { isValidUsername } from '@/lib/auth/reserved'
+import { usernameValidationError } from '@/lib/auth/reserved'
 import type { AuthBackend } from '@/lib/auth/types'
 
 export const localAuth: AuthBackend = {
   async signup(username, password, email) {
     const name = username.toLowerCase().trim()
-    if (!isValidUsername(name)) throw new Error('Username must be 3–24 characters: lowercase letters, numbers, hyphens')
+    const usernameErr = usernameValidationError(name)
+    if (usernameErr) throw new Error(usernameErr)
     if (password.length < 10) throw new Error('Password must be at least 10 characters')
 
     const existing = await findUserByUsername(name)

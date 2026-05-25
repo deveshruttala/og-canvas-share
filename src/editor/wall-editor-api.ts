@@ -1,4 +1,7 @@
 import type { Editor } from '@tldraw/editor'
+import { getSnapshot } from '@tldraw/editor'
+import { debounce } from '@/lib/cn'
+import type { ThemeConfig } from '@/themes'
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '@/types/canvas'
 
 export const WALL_FRAME_ID = 'shape:wall-frame' as const
@@ -111,34 +114,80 @@ export function wallCenter(editor: Editor) {
   return { x: cx, y: cy }
 }
 
-export function setupWallSurface(editor: Editor, themeBackground: string, mode: 'edit' | 'public' = 'edit') {
+function createWallFrame(editor: Editor, theme: ThemeConfig) {
+  editor.createShape({
+    id: WALL_FRAME_ID as never,
+    type: 'geo',
+    x: 0,
+    y: 0,
+    isLocked: true,
+    opacity: 0,
+    props: {
+      geo: 'rectangle',
+      w: CANVAS_WIDTH,
+      h: CANVAS_HEIGHT,
+      dash: 'draw',
+      color: 'black',
+      fill: 'none',
+      size: 'm',
+      font: 'draw',
+      align: 'middle',
+      verticalAlign: 'middle',
+      growY: 0,
+      url: '',
+      scale: 1,
+      richText: { type: 'doc', content: [] },
+    },
+    meta: { wallFrame: true, themeId: theme.id },
+  })
+  editor.sendToBack([WALL_FRAME_ID as never])
+}
+
+/** Updates the locked board frame colors when the user picks a new theme. */
+export function applyWallTheme(editor: Editor, theme: ThemeConfig) {
+  const existing = editor.getShape(WALL_FRAME_ID as never)
+  if (!existing || existing.type !== 'geo') {
+    createWallFrame(editor, theme)
+    return
+  }
+
+  editor.updateShape({
+    id: WALL_FRAME_ID as never,
+    type: 'geo',
+    opacity: 0,
+    meta: { wallFrame: true, themeId: theme.id },
+    props: {
+      ...(existing.props as unknown as Record<string, unknown>),
+      fill: 'none',
+      color: 'black',
+    },
+  })
+}
+
+/** Zoom camera to the artboard bounds. */
+export function zoomToWallPage(editor: Editor, opts?: { animate?: boolean }) {
+  const bounds = editor.getShapePageBounds(WALL_FRAME_ID as never)
+  if (bounds) {
+    editor.zoomToBounds(bounds, {
+      animation: opts?.animate === false ? { duration: 0 } : { duration: 300 },
+      inset: 48,
+    })
+    return
+  }
+  editor.zoomToFit({ animation: { duration: 300 } })
+}
+
+export function setupWallSurface(
+  editor: Editor,
+  theme: ThemeConfig,
+  mode: 'edit' | 'public' = 'edit',
+  opts?: { skipZoom?: boolean },
+) {
   const existing = editor.getShape(WALL_FRAME_ID as never)
   if (!existing) {
-    editor.createShape({
-      id: WALL_FRAME_ID as never,
-      type: 'geo',
-      x: 0,
-      y: 0,
-      isLocked: true,
-      props: {
-        geo: 'rectangle',
-        w: CANVAS_WIDTH,
-        h: CANVAS_HEIGHT,
-        dash: 'draw',
-        color: 'yellow',
-        fill: 'semi',
-        size: 'm',
-        font: 'draw',
-        align: 'middle',
-        verticalAlign: 'middle',
-        growY: 0,
-        url: '',
-        scale: 1,
-        richText: { type: 'doc', content: [] },
-      },
-      meta: { wallFrame: true, themeBackground },
-    })
-    editor.sendToBack([WALL_FRAME_ID as never])
+    createWallFrame(editor, theme)
+  } else {
+    applyWallTheme(editor, theme)
   }
 
   if (mode === 'public') {
@@ -146,13 +195,57 @@ export function setupWallSurface(editor: Editor, themeBackground: string, mode: 
     editor.zoomToFit({ animation: { duration: 0 } })
   } else {
     editor.setCameraOptions(WALL_CAMERA)
-    editor.zoomToFit({ animation: { duration: 300 } })
+    if (!opts?.skipZoom) {
+      zoomToWallPage(editor)
+    }
+  }
+}
+
+/** Debounced persist + history — avoids full-app re-render / CDN refetch storms on every transform frame. */
+export function attachWallDocumentSync(
+  editor: Editor,
+  handlers: {
+    readOnly: () => boolean
+    onPersist: (snapshot: unknown) => void
+  },
+) {
+  const schedulePersist = debounce(() => {
+    if (handlers.readOnly()) return
+    handlers.onPersist(getSnapshot(editor.store))
+  }, 1200)
+
+  const scheduleHistory = debounce(() => {
+    if (!handlers.readOnly()) notifyHistoryChange()
+  }, 200)
+
+  const flushPersist = () => {
+    if (handlers.readOnly()) return
+    schedulePersist.cancel()
+    handlers.onPersist(getSnapshot(editor.store))
+  }
+
+  const unsubStore = editor.store.listen(
+    () => {
+      schedulePersist()
+      scheduleHistory()
+    },
+    { scope: 'document' },
+  )
+
+  const onPointerUp = () => flushPersist()
+  window.addEventListener('pointerup', onPointerUp, { capture: true })
+
+  return () => {
+    unsubStore()
+    window.removeEventListener('pointerup', onPointerUp, { capture: true })
+    schedulePersist.cancel()
+    scheduleHistory.cancel()
   }
 }
 
 export function fitPublicWall(editor: Editor) {
   editor.setCameraOptions(PUBLIC_WALL_CAMERA)
-  editor.zoomToFit({ animation: { duration: 0 } })
+  zoomToWallPage(editor, { animate: false })
 }
 
 export function setWallReadonly(editor: Editor, readonly: boolean) {

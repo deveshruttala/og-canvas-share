@@ -5,6 +5,7 @@ import { flattenOmniItems, useOmniStore } from '@/store/omni.store'
 import { insertOmniItem } from '@/lib/omni-insert'
 import { useUiStore } from '@/store/ui.store'
 import { cn } from '@/lib/cn'
+import { displayAssetUrl } from '@/lib/asset-proxy'
 
 type Props = {
   sections: OmniSection[]
@@ -62,13 +63,17 @@ export function OmniResults({ sections, loading, activeIndex, onSelectIndex, onC
               </span>
             </header>
 
-            {section.needsKey && (
+            {section.error && (
+              <p className="omni-results-hint text-amber-200/90">{section.error}</p>
+            )}
+
+            {section.needsKey && !section.error && (
               <p className="omni-results-hint">
-                Connect {section.needsKey} in Connections settings for live results
+                Optional: connect {section.needsKey} in Connections for higher-quality results
               </p>
             )}
 
-            {section.id === 'images' || section.id === 'gifs' ? (
+            {section.items.length === 0 && section.error ? null : section.id === 'images' || section.id === 'gifs' ? (
               <div className="omni-thumb-grid">
                 {section.items.map((item, i) => {
                   const idx = startIdx + i
@@ -80,7 +85,9 @@ export function OmniResults({ sections, loading, activeIndex, onSelectIndex, onC
                       onMouseEnter={() => onSelectIndex(idx)}
                       onClick={() => void pick(idx)}
                     >
-                      {item.thumb && <img src={item.thumb} alt="" loading="lazy" />}
+                      {item.thumb && (
+                        <img src={displayAssetUrl(item.thumb)} alt="" loading="lazy" />
+                      )}
                       <span className="omni-thumb-add">
                         <Plus className="h-3 w-3" />
                       </span>

@@ -92,8 +92,8 @@ export function WallSnapGuides() {
     <svg className="wall-snap-guides pointer-events-none absolute inset-0 z-[250] h-full w-full overflow-visible">
       {guides.map((g, i) => {
         if (g.axis === 'x') {
-          const a = editor.pageToScreen({ x: g.value, y: g.from })
-          const b = editor.pageToScreen({ x: g.value, y: g.to })
+          const a = editor.pageToViewport({ x: g.value, y: g.from })
+          const b = editor.pageToViewport({ x: g.value, y: g.to })
           return (
             <line
               key={`${g.axis}-${g.value}-${i}`}
@@ -105,8 +105,8 @@ export function WallSnapGuides() {
             />
           )
         }
-        const a = editor.pageToScreen({ x: g.from, y: g.value })
-        const b = editor.pageToScreen({ x: g.to, y: g.value })
+        const a = editor.pageToViewport({ x: g.from, y: g.value })
+        const b = editor.pageToViewport({ x: g.to, y: g.value })
         return (
           <line
             key={`${g.axis}-${g.value}-${i}`}
