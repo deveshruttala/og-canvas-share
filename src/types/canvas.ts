@@ -56,6 +56,14 @@ export type ThemeId =
   | 'storm'
   | 'matcha'
   | 'blush'
+  | 'synthwave'
+  | 'ceremony'
+  | 'barista'
+  | 'frost'
+  | 'beach'
+  | 'brutalist'
+  | 'frosted'
+  | 'darkroom'
 
 export type ElementType =
   | 'text'

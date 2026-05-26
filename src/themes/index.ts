@@ -608,6 +608,102 @@ export const themes: Record<ThemeId, ThemeConfig> = {
     boardColor: 'light-red',
     boardFill: 'solid',
   },
+  synthwave: {
+    id: 'synthwave',
+    label: 'Synthwave',
+    category: 'dark',
+    description: 'Neon magenta on deep violet — matches Loopline',
+    background:
+      'radial-gradient(circle at 20% 25%, rgba(168, 85, 247, 0.35), transparent 45%), radial-gradient(circle at 80% 75%, rgba(236, 72, 153, 0.3), transparent 42%), linear-gradient(165deg, #0d0820 0%, #110a18 100%)',
+    canvasClass: 'shadow-wall-lg border border-fuchsia-500/30',
+    defaultAccent: '#f0abfc',
+    boardColor: 'violet',
+    boardFill: 'solid',
+  },
+  ceremony: {
+    id: 'ceremony',
+    label: 'Ceremony',
+    category: 'minimal',
+    description: 'Cream paper with blush — wedding & save-the-date',
+    background:
+      'radial-gradient(circle at 22% 18%, rgba(251, 207, 232, 0.35), transparent 48%), radial-gradient(circle at 80% 80%, rgba(187, 211, 165, 0.22), transparent 45%), linear-gradient(170deg, #f3ead9 0%, #e9dcc4 100%)',
+    canvasClass: 'shadow-wall border border-amber-100/40',
+    defaultAccent: '#b8556b',
+    boardColor: 'light-red',
+    boardFill: 'solid',
+  },
+  barista: {
+    id: 'barista',
+    label: 'Barista',
+    category: 'color',
+    description: 'Warm chalkboard café — amber + espresso',
+    background:
+      'radial-gradient(circle at 28% 25%, rgba(180, 83, 9, 0.22), transparent 45%), radial-gradient(circle at 82% 65%, rgba(234, 179, 8, 0.14), transparent 42%), linear-gradient(160deg, #1c1410 0%, #0f0c0a 100%)',
+    canvasClass: 'shadow-wall-lg border border-amber-700/30',
+    defaultAccent: '#fbbf24',
+    boardColor: 'orange',
+    boardFill: 'semi',
+  },
+  frost: {
+    id: 'frost',
+    label: 'Frost',
+    category: 'color',
+    description: 'Icy winter — snow drifts on glacier blue',
+    background:
+      'radial-gradient(circle at 25% 15%, rgba(255, 255, 255, 0.6), transparent 40%), radial-gradient(circle at 75% 85%, rgba(186, 230, 253, 0.5), transparent 50%), linear-gradient(180deg, #e0f2fe 0%, #bae6fd 60%, #7dd3fc 100%)',
+    canvasClass: 'shadow-wall border border-sky-200/60',
+    defaultAccent: '#0284c7',
+    boardColor: 'light-blue',
+    boardFill: 'solid',
+  },
+  beach: {
+    id: 'beach',
+    label: 'Beach',
+    category: 'color',
+    description: 'Sunlit sand and turquoise sea',
+    background:
+      'linear-gradient(180deg, #fef3c7 0%, #fde68a 30%, #67e8f9 65%, #06b6d4 100%)',
+    canvasClass: 'shadow-wall border border-amber-200',
+    defaultAccent: '#ea580c',
+    boardColor: 'yellow',
+    boardFill: 'solid',
+  },
+  brutalist: {
+    id: 'brutalist',
+    label: 'Brutalist',
+    category: 'minimal',
+    description: 'Concrete & ink — high-contrast brutalism',
+    background:
+      'repeating-linear-gradient(90deg, #fafafa 0px, #fafafa 79px, #e5e5e5 79px, #e5e5e5 80px), #fafafa',
+    canvasClass: 'shadow-wall-lg border-4 border-black',
+    defaultAccent: '#dc2626',
+    boardColor: 'black',
+    boardFill: 'solid',
+  },
+  frosted: {
+    id: 'frosted',
+    label: 'Frosted',
+    category: 'minimal',
+    description: 'Glassmorphism — pastel orbs on translucent white',
+    background:
+      'radial-gradient(circle at 20% 30%, rgba(167, 139, 250, 0.4), transparent 35%), radial-gradient(circle at 80% 65%, rgba(244, 114, 182, 0.35), transparent 38%), radial-gradient(circle at 50% 90%, rgba(52, 211, 153, 0.3), transparent 40%), linear-gradient(140deg, #ffffff 0%, #f5f3ff 100%)',
+    canvasClass: 'shadow-wall border border-white/40 backdrop-blur',
+    defaultAccent: '#7c3aed',
+    boardColor: 'violet',
+    boardFill: 'solid',
+  },
+  darkroom: {
+    id: 'darkroom',
+    label: 'Darkroom',
+    category: 'dark',
+    description: 'Matte black studio — photographer portfolio',
+    background:
+      'radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.04), transparent 55%), linear-gradient(180deg, #0a0a0a 0%, #050505 100%)',
+    canvasClass: 'shadow-wall-lg border border-neutral-800',
+    defaultAccent: '#fafafa',
+    boardColor: 'white',
+    boardFill: 'solid',
+  },
 }
 
 export const themeList = Object.values(themes)

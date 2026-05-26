@@ -8,7 +8,7 @@ import { goToTimelineMark } from '@/editor/wall-timeline-history'
 import { useWallHistory } from '@/editor/useWallHistory'
 import { cn } from '@/lib/cn'
 
-const MAX_DOTS = 16
+const MAX_DOTS = 10
 
 export function SessionTimeline() {
   const { canUndo, canRedo, timeline } = useWallHistory()

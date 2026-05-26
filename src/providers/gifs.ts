@@ -38,6 +38,56 @@ function mapGiphyItem(g: {
   }
 }
 
+type WikiGifHit = {
+  pageid: number
+  title?: string
+  imageinfo?: Array<{ url?: string; thumburl?: string; mime?: string }>
+}
+
+/** Wikimedia Commons GIFs — free, no API key, reliable. */
+async function searchWikimediaGifs(q: string, limit = 24): Promise<OmniItem[]> {
+  try {
+    const params = new URLSearchParams({
+      action: 'query',
+      format: 'json',
+      generator: 'search',
+      gsrsearch: `filetype:image ${q} .gif`,
+      gsrnamespace: '6',
+      gsrlimit: String(Math.min(limit, 30)),
+      prop: 'imageinfo',
+      iiprop: 'url|mime',
+      iiurlwidth: '320',
+    })
+    const res = await fetch(`/wall-img-api/wikimedia?${params.toString()}`)
+    if (!res.ok) return []
+    const data = (await res.json()) as { query?: { pages?: Record<string, WikiGifHit> } }
+    const pages = Object.values(data.query?.pages ?? {})
+    const items: OmniItem[] = []
+    for (const page of pages) {
+      const info = page.imageinfo?.[0]
+      const fullUrl = info?.url
+      const thumb = info?.thumburl ?? fullUrl
+      if (!fullUrl || !thumb) continue
+      // Wikimedia search with `filetype:image` returns mixed results; keep .gif only
+      if (!/\.gif(\?|$)/i.test(fullUrl)) continue
+      const title = (page.title ?? 'GIF').replace(/^File:/, '').replace(/\.[^.]+$/, '')
+      items.push({
+        id: `wiki-gif-${page.pageid}`,
+        kind: 'gif',
+        title,
+        thumb,
+        previewUrl: fullUrl,
+        source: 'Wikimedia',
+        attribution: 'Wikimedia Commons',
+        payload: { url: fullUrl, attribution: 'Wikimedia Commons' },
+      })
+    }
+    return items
+  } catch {
+    return []
+  }
+}
+
 /** Free CC / Wikimedia animated GIFs — no API key. */
 async function searchOpenverseGifs(q: string, limit = 24): Promise<OmniItem[]> {
   try {
@@ -217,13 +267,14 @@ export async function searchGifs(query: string, browse = false): Promise<Provide
   const giphyKey = getProviderKey('giphy')
   const tenorKey = getProviderKey('tenor')
 
-  const [openverse, giphy, tenor] = await Promise.all([
+  const [openverse, wikimedia, giphy, tenor] = await Promise.all([
     searchOpenverseGifs(q, 20),
+    searchWikimediaGifs(q, 16),
     searchGiphy(q, giphyKey, 20),
     searchTenor(q, tenorKey, 20),
   ])
 
-  const merged = dedupeItems([...giphy, ...tenor, ...openverse])
+  const merged = dedupeItems([...giphy, ...tenor, ...openverse, ...wikimedia])
 
   if (merged.length === 0) {
     return {
@@ -232,7 +283,7 @@ export async function searchGifs(query: string, browse = false): Promise<Provide
         title: 'GIFs',
         source: 'No matches',
         error: !giphyKey && !tenorKey
-          ? `No GIFs for "${q}". Openverse had no matches — add a Giphy or Tenor key in Connections.`
+          ? `No GIFs for "${q}". Free sources (Openverse + Wikimedia) had no matches — add a Giphy or Tenor key in Connections.`
           : `No GIFs found for "${q}".`,
         items: [],
         needsKey: !giphyKey && !tenorKey ? 'giphy' : undefined,
@@ -244,6 +295,7 @@ export async function searchGifs(query: string, browse = false): Promise<Provide
   if (giphy.length) sources.push('Giphy')
   if (tenor.length) sources.push('Tenor')
   if (openverse.length) sources.push('Openverse (free)')
+  if (wikimedia.length) sources.push('Wikimedia (free)')
 
   return {
     section: {

@@ -278,4 +278,48 @@ export const PAGE_BACKGROUNDS: Record<ThemeId, PageBackgroundStyle> = {
     pageFallbackColor: '#fff1f2',
     pageClass: 'wall-page-shadow',
   },
+  synthwave: {
+    pageBackground:
+      'radial-gradient(circle at 30% 20%, rgba(168, 85, 247, 0.18), transparent 45%), radial-gradient(circle at 75% 80%, rgba(236, 72, 153, 0.18), transparent 42%), linear-gradient(170deg, #170b2e 0%, #0d0820 100%)',
+    pageFallbackColor: '#170b2e',
+    pageClass: 'wall-page-shadow',
+  },
+  ceremony: {
+    pageBackground: 'linear-gradient(170deg, #fffaf0 0%, #fbeed4 100%)',
+    pageFallbackColor: '#fffaf0',
+    pageClass: 'wall-page-shadow',
+  },
+  barista: {
+    pageBackground:
+      'radial-gradient(circle at 20% 25%, rgba(180, 83, 9, 0.18), transparent 45%), linear-gradient(160deg, #2a1d14 0%, #1a120c 100%)',
+    pageFallbackColor: '#1a120c',
+    pageClass: 'wall-page-shadow',
+  },
+  frost: {
+    pageBackground:
+      'radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.5), transparent 35%), linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%)',
+    pageFallbackColor: '#e0f2fe',
+    pageClass: 'wall-page-shadow',
+  },
+  beach: {
+    pageBackground: 'linear-gradient(180deg, #fef9c3 0%, #fde68a 40%, #a5f3fc 100%)',
+    pageFallbackColor: '#fef9c3',
+    pageClass: 'wall-page-shadow',
+  },
+  brutalist: {
+    pageBackground: '#fafafa',
+    pageFallbackColor: '#fafafa',
+    pageClass: 'wall-page-shadow wall-page-brutalist',
+  },
+  frosted: {
+    pageBackground:
+      'radial-gradient(circle at 25% 35%, rgba(167, 139, 250, 0.22), transparent 40%), radial-gradient(circle at 78% 70%, rgba(244, 114, 182, 0.18), transparent 42%), linear-gradient(140deg, #ffffff 0%, #f5f3ff 100%)',
+    pageFallbackColor: '#ffffff',
+    pageClass: 'wall-page-shadow',
+  },
+  darkroom: {
+    pageBackground: 'linear-gradient(180deg, #161616 0%, #0a0a0a 100%)',
+    pageFallbackColor: '#0a0a0a',
+    pageClass: 'wall-page-shadow',
+  },
 }

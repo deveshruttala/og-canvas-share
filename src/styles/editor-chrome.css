@@ -837,7 +837,7 @@
 
 /* Session timeline */
 .wall-session-timeline {
-  position: absolute;
+  position: fixed;
   left: 1rem;
   bottom: calc(6.5rem + env(safe-area-inset-bottom));
   z-index: 215;
