@@ -3,6 +3,7 @@ import type { TLNoteShape, TLTextShape } from '@tldraw/tlschema'
 import {
   DEFAULT_TEXT_BOX_STYLE,
   resolveTextSizeProps,
+  tldrawFontFor,
   type WallStickyColor,
   type WallTextBoxStyle,
   type WallTextAlign,
@@ -44,7 +45,7 @@ export function createTextBoxShape(
       richText: toRichText(opts.text ?? 'Type here'),
       color: style.color,
       size: tldSize,
-      font: style.font,
+      font: tldrawFontFor(style.font),
       textAlign: style.textAlign === 'middle' ? 'middle' : style.textAlign,
       autoSize: true,
       w: 320,
@@ -125,7 +126,7 @@ export function applyTextBoxStyleToShape(
         ...props,
         ...(stylePatch.color ? { color: stylePatch.color } : {}),
         ...(sizeResolved ? { size: sizeResolved.size, scale: sizeResolved.scale } : {}),
-        ...(stylePatch.font ? { font: stylePatch.font } : {}),
+        ...(stylePatch.font ? { font: tldrawFontFor(stylePatch.font) } : {}),
         ...(stylePatch.textAlign
           ? { textAlign: stylePatch.textAlign === 'middle' ? 'middle' : stylePatch.textAlign }
           : {}),
@@ -152,7 +153,7 @@ export function applyTextBoxStyleToShape(
         ...props,
         ...(stylePatch.stickyColor ? { color: stylePatch.stickyColor } : {}),
         ...(sizeResolved ? { size: sizeResolved.size, scale: sizeResolved.scale } : {}),
-        ...(stylePatch.font ? { font: stylePatch.font } : {}),
+        ...(stylePatch.font ? { font: tldrawFontFor(stylePatch.font) } : {}),
         ...(stylePatch.textAlign ? { align: stylePatch.textAlign } : {}),
         ...(richText ? { richText } : {}),
       },

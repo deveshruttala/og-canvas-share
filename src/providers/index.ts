@@ -139,6 +139,36 @@ export function clearOmniSearchCache() {
   searchCache.clear()
 }
 
+/**
+ * Fetch the Nth page of paginated providers (images, gifs). Returns only
+ * sections that support pagination — callers merge these into existing
+ * sections by id. Used by the "Show more" button in the omni results panel.
+ */
+export async function runOmniSearchMore(
+  query: string,
+  filter: OmniSearchFilter,
+  page: number,
+): Promise<OmniSection[]> {
+  const q = query.trim()
+  if (!q) return []
+  const out: OmniSection[] = []
+
+  // Only Images & GIFs sources support pagination right now. Other media
+  // (video/audio) APIs don't expose page params, so calling them here would
+  // return duplicates — skip them.
+  const wantImages = filter === 'all' || filter === 'images'
+  const wantGifs = filter === 'all' || filter === 'gifs'
+
+  const [images, gifs] = await Promise.all([
+    wantImages ? searchImages(q, false, page).catch(() => null) : Promise.resolve(null),
+    wantGifs ? searchGifs(q, false, page).catch(() => null) : Promise.resolve(null),
+  ])
+
+  if (images?.section) out.push(images.section as OmniSection)
+  if (gifs?.section) out.push(gifs.section as OmniSection)
+  return out
+}
+
 export async function runOmniSearch(
   query: string,
   filter: OmniSearchFilter = 'all',

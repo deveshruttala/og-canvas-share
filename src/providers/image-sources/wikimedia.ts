@@ -18,8 +18,13 @@ function isRasterThumb(info: { url?: string; thumburl?: string; mime?: string })
 }
 
 /** Wikimedia Commons — free, no API key, reliable search. */
-export async function searchWikimediaImages(q: string, limit = 24): Promise<ImageSourceResult> {
+export async function searchWikimediaImages(
+  q: string,
+  limit = 24,
+  page = 1,
+): Promise<ImageSourceResult> {
   try {
+    const offset = Math.max(0, (page - 1) * limit)
     const params = new URLSearchParams({
       action: 'query',
       format: 'json',
@@ -27,6 +32,7 @@ export async function searchWikimediaImages(q: string, limit = 24): Promise<Imag
       gsrsearch: `filetype:bitmap ${q}`,
       gsrnamespace: '6',
       gsrlimit: String(Math.min(limit, 32)),
+      gsroffset: String(offset),
       prop: 'imageinfo',
       iiprop: 'url|mime',
       iiurlwidth: '320',

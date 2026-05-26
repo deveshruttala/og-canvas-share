@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Loader2, Plus, RefreshCw, Grid3x3, LayoutGrid, SlidersHorizontal } from 'lucide-react'
+import { Loader2, Plus, RefreshCw, Grid3x3, LayoutGrid, SlidersHorizontal, ChevronDown } from 'lucide-react'
 import type { OmniSection } from '@/providers/types'
 import { flattenOmniItems, useOmniStore } from '@/store/omni.store'
 import {
@@ -111,11 +111,17 @@ function OmniBoardToolbar({
   const thumbCols = useOmniStore((s) => s.thumbCols)
   const setThumbCols = useOmniStore((s) => s.setThumbCols)
   const refresh = useOmniStore((s) => s.refresh)
+  const loadMore = useOmniStore((s) => s.loadMore)
+  const loadingMore = useOmniStore((s) => s.loadingMore)
   const recentQueries = useOmniStore((s) => s.recentQueries)
   const setQuery = useOmniStore((s) => s.setQuery)
   const clearRecent = useOmniStore((s) => s.clearRecent)
 
   const filterMeta = OMNI_SEARCH_FILTERS.find((f) => f.id === filter)
+  // "More" is only meaningful for paginated providers (images, gifs).
+  // For other filters it falls back to "Refresh" so the button still has a job.
+  const supportsMore =
+    Boolean(query.trim()) && (filter === 'all' || filter === 'images' || filter === 'gifs')
 
   return (
     <div className="omni-board-toolbar">
@@ -152,10 +158,26 @@ function OmniBoardToolbar({
             ))}
           </div>
         )}
+        {supportsMore ? (
+          <button
+            type="button"
+            className="omni-toolbar-more"
+            title="Load more results for this query"
+            disabled={loading || loadingMore}
+            onClick={() => void loadMore()}
+          >
+            {loadingMore ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
+            <span>{loadingMore ? 'Loading…' : 'More'}</span>
+          </button>
+        ) : null}
         <button
           type="button"
           className="omni-toolbar-btn"
-          title="Refresh results"
+          title="Refresh (shuffle / re-fetch)"
           disabled={loading}
           onClick={() => void refresh()}
         >

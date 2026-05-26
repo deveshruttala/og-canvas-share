@@ -64,6 +64,14 @@ export type ThemeId =
   | 'brutalist'
   | 'frosted'
   | 'darkroom'
+  | 'holographic'
+  | 'dune'
+  | 'lagoon'
+  | 'peach-fuzz'
+  | 'sage-paper'
+  | 'gameboy'
+  | 'retrogrid'
+  | 'oxblood'
 
 export type ElementType =
   | 'text'

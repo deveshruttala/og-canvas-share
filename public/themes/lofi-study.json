@@ -1,0 +1,10 @@
+{
+  "id": "lofi-study",
+  "label": "Lo-Fi Study",
+  "description": "Warm cocoa with cassette dust — chill beats",
+  "category": "community",
+  "workspaceBackground": "radial-gradient(ellipse at 30% 30%, #fbbf24 0%, transparent 35%), linear-gradient(160deg, #3f2515 0%, #1c0e08 100%)",
+  "pageBackground": "linear-gradient(140deg, #fef3c7 0%, #fde68a 50%, #fbbf24 100%)",
+  "defaultAccent": "#92400e",
+  "canvasClass": "border border-amber-300/40 shadow-wall"
+}

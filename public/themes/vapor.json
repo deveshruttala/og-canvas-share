@@ -1,0 +1,10 @@
+{
+  "id": "vapor",
+  "label": "Vapor",
+  "description": "Vaporwave seafoam + magenta sunset",
+  "category": "community",
+  "workspaceBackground": "linear-gradient(180deg, #f0abfc 0%, #c084fc 35%, #67e8f9 75%, #5eead4 100%)",
+  "pageBackground": "linear-gradient(180deg, #fae8ff 0%, #f5d0fe 40%, #cffafe 80%, #ccfbf1 100%)",
+  "defaultAccent": "#a21caf",
+  "canvasClass": "border border-fuchsia-300/50 shadow-wall"
+}

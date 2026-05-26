@@ -3,6 +3,7 @@ import type { OmniSection } from '@/providers/types'
 import {
   runOmniSearch,
   runOmniSearchStreaming,
+  runOmniSearchMore,
   invalidateOmniCacheFor,
 } from '@/providers/index'
 import { debounce } from '@/lib/cn'
@@ -51,6 +52,14 @@ type OmniState = {
    * results — even when upstream APIs return the same payload.
    */
   refreshSeed: number
+  /**
+   * 1-based page counter for the "Show more" button. Image/GIF providers
+   * paginate against this; new items are appended to the existing sections.
+   * Resets to 1 on new query/filter.
+   */
+  currentPage: number
+  /** True while a loadMore() fetch is in flight, for button disabled state. */
+  loadingMore: boolean
   setOpen: (open: boolean) => void
   setQuery: (query: string) => void
   setFilter: (filter: OmniSearchFilter) => void
@@ -61,6 +70,7 @@ type OmniState = {
   clearRecent: () => void
   search: (query: string) => Promise<void>
   refresh: () => Promise<void>
+  loadMore: () => Promise<void>
 }
 
 const SHUFFLE_SECTION_IDS = new Set(['images', 'gifs', 'videos', 'audio', 'icons'])
@@ -143,20 +153,22 @@ export const useOmniStore = create<OmniState>((set, get) => {
     thumbCols: 5,
     recentQueries: loadRecent(),
     refreshSeed: 0,
+    currentPage: 1,
+    loadingMore: false,
     setOpen: (open) => {
       set({ open })
       if (open) void runSearch(get().query, get().filter)
     },
     setFilter: (filter) => {
-      // New filter → reset shuffle so the new section starts in natural order.
-      set({ filter, refreshSeed: 0 })
+      // New filter → reset shuffle and pagination so the new section starts fresh.
+      set({ filter, refreshSeed: 0, currentPage: 1 })
       const { query } = get()
       void runSearch(query, filter)
     },
     setQuery: (query) => {
       const filter = get().filter
-      // New query → reset shuffle.
-      set({ query, refreshSeed: 0 })
+      // New query → reset shuffle and pagination.
+      set({ query, refreshSeed: 0, currentPage: 1 })
       searchDebounced?.(query, filter)
     },
     setActiveIndex: (activeIndex) => set({ activeIndex }),
@@ -184,9 +196,46 @@ export const useOmniStore = create<OmniState>((set, get) => {
       const { query, filter, refreshSeed } = get()
       // Bump the seed so the shuffle picks a different ordering, and
       // invalidate the in-memory cache so we actually re-fetch from APIs.
-      set({ refreshSeed: refreshSeed + 1 })
+      set({ refreshSeed: refreshSeed + 1, currentPage: 1 })
       invalidateOmniCacheFor(query, filter)
       await runSearch(query, filter)
+    },
+    loadMore: async () => {
+      const { query, filter, currentPage, sections, loadingMore } = get()
+      if (loadingMore) return
+      if (!query.trim()) return
+      const nextPage = currentPage + 1
+      set({ loadingMore: true })
+      try {
+        const more = await runOmniSearchMore(query, filter, nextPage)
+        // Merge: for each new section, find the existing one by id and append
+        // de-duplicated items. Sections that don't already exist get added.
+        const byId = new Map(sections.map((s) => [s.id, s]))
+        for (const fresh of more) {
+          const existing = byId.get(fresh.id)
+          if (!existing) {
+            byId.set(fresh.id, fresh)
+            continue
+          }
+          const seen = new Set(existing.items.map((i) => i.id))
+          const merged = [...existing.items]
+          for (const item of fresh.items) {
+            if (seen.has(item.id)) continue
+            seen.add(item.id)
+            merged.push(item)
+          }
+          byId.set(fresh.id, { ...existing, items: merged, more: fresh.more })
+        }
+        // Preserve original section order from sections, then any new ids.
+        const orderedIds: string[] = sections.map((s) => s.id)
+        for (const id of byId.keys()) if (!orderedIds.includes(id)) orderedIds.push(id)
+        const nextSections = orderedIds
+          .map((id) => byId.get(id))
+          .filter((s): s is OmniSection => Boolean(s))
+        set({ sections: nextSections, currentPage: nextPage, loadingMore: false })
+      } catch {
+        set({ loadingMore: false })
+      }
     },
   }
 })

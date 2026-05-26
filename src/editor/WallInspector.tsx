@@ -645,7 +645,7 @@ export function WallInspector() {
 
                 <section className="wall-inspector-panel">
                   <p className="wall-inspector-tray-title">Font</p>
-                  <div className="wall-inspector-segment wall-inspector-segment--4">
+                  <div className="wall-inspector-segment wall-inspector-segment--5">
                     {FONT_OPTIONS.map((f) => (
                       <button
                         key={f.id}

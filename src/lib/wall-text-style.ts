@@ -26,7 +26,43 @@ export type WallTextColor =
   | 'violet'
   | 'light-violet'
 
-export type WallTextFont = 'sans' | 'draw' | 'serif' | 'mono'
+/**
+ * Wall font variants. The first four map 1:1 to tldraw's built-in fonts;
+ * the rest are visual-style variants that map back to one of those four
+ * at the tldraw boundary (via tldrawFontFor below) while showing distinct
+ * styling in the inspector preview.
+ */
+export type WallTextFont =
+  | 'sans'
+  | 'draw'
+  | 'serif'
+  | 'mono'
+  | 'display'
+  | 'rounded'
+  | 'slab'
+  | 'editorial'
+  | 'script'
+  | 'condensed'
+
+/** Map an extended Wall font variant to its tldraw-compatible base. */
+export function tldrawFontFor(font: WallTextFont): 'sans' | 'draw' | 'serif' | 'mono' {
+  switch (font) {
+    case 'sans':
+    case 'display':
+    case 'rounded':
+    case 'condensed':
+      return 'sans'
+    case 'serif':
+    case 'slab':
+    case 'editorial':
+      return 'serif'
+    case 'draw':
+    case 'script':
+      return 'draw'
+    case 'mono':
+      return 'mono'
+  }
+}
 /** Wall UI sizes — mapped to tldraw s/m/l/xl + optional scale. */
 export type WallTextSize = 'xs' | 's' | 'm' | 'l' | 'xl' | '2xl' | '3xl'
 export type TldrawTextSize = 's' | 'm' | 'l' | 'xl'
@@ -97,10 +133,16 @@ export const TEXT_COLOR_OPTIONS: { id: WallTextColor; label: string }[] = [
 ]
 
 export const FONT_OPTIONS: { id: WallTextFont; label: string; hint: string; sample: string }[] = [
-  { id: 'sans', label: 'Sans', hint: 'Inter-style UI', sample: 'Aa' },
-  { id: 'draw', label: 'Hand', hint: 'Sketch marker', sample: 'Aa' },
-  { id: 'serif', label: 'Serif', hint: 'Editorial', sample: 'Aa' },
+  { id: 'sans', label: 'Sans', hint: 'Clean UI text', sample: 'Aa' },
+  { id: 'display', label: 'Display', hint: 'Bold poster headline', sample: 'Aa' },
+  { id: 'rounded', label: 'Rounded', hint: 'Friendly geometric', sample: 'Aa' },
+  { id: 'condensed', label: 'Condensed', hint: 'Tight news / tag', sample: 'Aa' },
+  { id: 'serif', label: 'Serif', hint: 'Classic editorial', sample: 'Aa' },
+  { id: 'slab', label: 'Slab', hint: 'Chunky slab serif', sample: 'Aa' },
+  { id: 'editorial', label: 'Editorial', hint: 'Magazine display', sample: 'Aa' },
   { id: 'mono', label: 'Mono', hint: 'Code & data', sample: 'Aa' },
+  { id: 'draw', label: 'Hand', hint: 'Sketch marker', sample: 'Aa' },
+  { id: 'script', label: 'Script', hint: 'Calligraphy flow', sample: 'Aa' },
 ]
 
 export const SIZE_OPTIONS: { id: WallTextSize; label: string; hint: string; px: number }[] = [

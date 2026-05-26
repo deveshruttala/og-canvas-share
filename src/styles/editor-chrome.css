@@ -584,6 +584,10 @@
   grid-template-columns: repeat(4, 1fr);
 }
 
+.wall-inspector-segment--5 {
+  grid-template-columns: repeat(5, 1fr);
+}
+
 .wall-inspector-segment--7 {
   grid-template-columns: repeat(7, 1fr);
 }
@@ -626,19 +630,51 @@
 }
 
 .wall-inspector-font-sample[data-font='sans'] {
-  font-family: system-ui, sans-serif;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
-.wall-inspector-font-sample[data-font='draw'] {
-  font-family: 'Comic Sans MS', 'Segoe Print', cursive;
+.wall-inspector-font-sample[data-font='display'] {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.wall-inspector-font-sample[data-font='rounded'] {
+  font-family: ui-rounded, 'SF Pro Rounded', 'Quicksand', system-ui, sans-serif;
+  font-weight: 700;
+}
+
+.wall-inspector-font-sample[data-font='condensed'] {
+  font-family: 'Helvetica Neue Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif;
+  font-stretch: condensed;
+  letter-spacing: 0.02em;
 }
 
 .wall-inspector-font-sample[data-font='serif'] {
   font-family: Georgia, 'Times New Roman', serif;
 }
 
+.wall-inspector-font-sample[data-font='slab'] {
+  font-family: 'Roboto Slab', 'Rockwell', 'Courier New', serif;
+  font-weight: 800;
+}
+
+.wall-inspector-font-sample[data-font='editorial'] {
+  font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  font-style: italic;
+}
+
 .wall-inspector-font-sample[data-font='mono'] {
-  font-family: ui-monospace, monospace;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+
+.wall-inspector-font-sample[data-font='draw'] {
+  font-family: 'Comic Sans MS', 'Segoe Print', cursive;
+}
+
+.wall-inspector-font-sample[data-font='script'] {
+  font-family: 'Snell Roundhand', 'Brush Script MT', 'Lucida Handwriting', cursive;
+  font-style: italic;
 }
 
 .wall-inspector-align-btn {

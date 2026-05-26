@@ -47,6 +47,42 @@
       "file": "storm-grey.json",
       "label": "Storm Grey",
       "description": "Moody thunder clouds"
+    },
+    {
+      "id": "desert-mirage",
+      "file": "desert-mirage.json",
+      "label": "Desert Mirage",
+      "description": "Sun-baked terracotta with rose dust"
+    },
+    {
+      "id": "hacker-terminal",
+      "file": "hacker-terminal.json",
+      "label": "Hacker Terminal",
+      "description": "Phosphor green on jet black"
+    },
+    {
+      "id": "lofi-study",
+      "file": "lofi-study.json",
+      "label": "Lo-Fi Study",
+      "description": "Warm cocoa with cassette dust"
+    },
+    {
+      "id": "brutalist-white",
+      "file": "brutalist-white.json",
+      "label": "Brutalist White",
+      "description": "Stark white grid with black ink"
+    },
+    {
+      "id": "gradient-mesh",
+      "file": "gradient-mesh.json",
+      "label": "Gradient Mesh",
+      "description": "Soft pastel mesh — purple, pink, mint, gold"
+    },
+    {
+      "id": "vapor",
+      "file": "vapor.json",
+      "label": "Vapor",
+      "description": "Vaporwave seafoam + magenta sunset"
     }
   ]
 }

@@ -4,7 +4,7 @@ import { ReactionBurstLayer, useReactionBursts } from '@/ui/ReactionBurst'
 import { isApiConfigured } from '@/lib/api'
 import { recordPing } from '@/lib/stats-client'
 
-const REACTIONS = ['❤️', '🔥', '👏', '💡', '🎉', '🤯', '😂', '🚀', '⭐', '👍', '😮', '💯'] as const
+const REACTIONS = ['❤️', '🔥', '👏', '💡', '🎉', '🤯', '😂', '🚀', '⭐', '👍', '👎', '😮', '💯'] as const
 
 /** Compact corner reactions for public wall view */
 export function ReactionBar({ username }: { username?: string }) {
@@ -50,15 +50,19 @@ export function ReactionBar({ username }: { username?: string }) {
   )
 }
 
-/** Logo + reactions pinned to bottom-left on public walls */
+/** Public wall chrome — small logo pill bottom-left, reaction bar bottom-center.
+ * Both pinned with `position: fixed` so they stay upright even when the
+ * canvas stage rotates 90° on mobile. */
 export function PublicWallChrome({ username }: { username?: string }) {
   return (
-    <div className="public-wall-chrome">
+    <>
       <Link to="/" className="public-wall-logo" aria-label="Wall home">
         <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="" aria-hidden />
         <span>Wall</span>
       </Link>
-      <ReactionBar username={username} />
-    </div>
+      <div className="public-wall-chrome">
+        <ReactionBar username={username} />
+      </div>
+    </>
   )
 }

@@ -1,39 +1,60 @@
-/* Public wall viewer — full-bleed canvas + mobile landscape */
+/* Public wall viewer — CSS-cover scaled canvas + mobile-only 90° rotate.
+ *
+ * The stage is a fixed 1600×1000 box pinned to the viewport center, then
+ * CSS-transformed by a JS-computed scale to cover the viewport. No tldraw
+ * camera math involved — the editor renders at its natural size and we
+ * scale the wrapper.
+ */
 
 .public-viewer-shell {
   position: fixed;
   inset: 0;
   overflow: hidden;
-  background: var(--bg-page, #faf8f5);
+  /* Background defaults to dark; the theme's workspace bg also renders behind
+   * the stage and bleeds into the letterbox bands so they read as part of the
+   * wall, not as black borders. */
+  background: #0a0a0a;
 }
 
 .public-viewer-rotate {
-  position: relative;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
 }
 
-/* Mobile portrait → force horizontal layout for canvas */
-@media (max-width: 896px) and (orientation: portrait) {
-  .public-viewer-rotate {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 100vh;
-    height: 100vw;
-    max-width: 100vh;
-    max-height: 100vw;
-    transform: translate(-50%, -50%) rotate(90deg);
-    transform-origin: center center;
-  }
+/* Mobile portrait (touch device only) → rotate the entire rotate-layer 90°
+ * so the landscape wall reads correctly on a phone held upright. */
+.public-viewer-rotate--mobile {
+  transform: rotate(90deg);
+  transform-origin: center center;
+  width: 100dvh;
+  height: 100dvw;
+  top: 50%;
+  left: 50%;
+  margin-left: calc(-50dvw);
+  margin-top: calc(-50dvh);
+}
+
+/* The fixed-size stage sits in the center of the rotate-layer and gets
+ * inline-scaled via JS. The translate(-50%, -50%) is part of the inline
+ * transform string — keep this rule slim so JS owns the transform. */
+.public-viewer-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: center center;
+  will-change: transform;
 }
 
 .wall-tldraw-root.wall-public-view {
   background: var(--bg-page, #faf8f5);
-  touch-action: none;
+  touch-action: pan-x pan-y;
 }
 
-.wall-tldraw-root.wall-public-view .wall-workspace-bg {
+/* Workspace bg is painted at the shell level (full viewport). Inside the
+ * stage we hide it so we don't double-paint the gradient. */
+.public-viewer-stage .wall-workspace-bg {
   display: none;
 }
 
@@ -42,79 +63,98 @@
   background: var(--bg-page, #faf8f5) !important;
 }
 
-/* Bottom-left chrome: logo + reactions (inside rotated container on mobile) */
+/* Chrome lives OUTSIDE the rotated stage so the logo and reaction bar stay
+ * upright on mobile too. Reaction bar pins bottom-center as a proper pill.
+ * Using left: 50% + translateX avoids containing-block edge cases from any
+ * transformed ancestor in the React tree. */
 .public-wall-chrome {
   pointer-events: none;
-  position: absolute;
+  position: fixed;
   z-index: 50;
-  left: max(12px, env(safe-area-inset-left));
-  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
+  align-items: center;
   gap: 10px;
 }
 
 .public-wall-logo {
   pointer-events: auto;
-  display: flex;
+  position: fixed;
+  left: max(16px, env(safe-area-inset-left));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px 6px 6px;
+  padding: 6px 12px 6px 6px;
   border-radius: var(--r-pill, 999px);
-  background: rgba(255, 252, 246, 0.88);
-  border: 1px solid rgba(60, 50, 40, 0.08);
-  box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(12px);
+  background: rgba(20, 20, 24, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(14px);
   text-decoration: none;
-  transition: opacity 0.15s;
+  transition: background 0.15s, opacity 0.15s;
+  z-index: 51;
 }
 
 .public-wall-logo:hover {
-  opacity: 0.9;
+  background: rgba(30, 30, 36, 0.88);
 }
 
 .public-wall-logo img {
-  height: 24px;
-  width: 24px;
+  height: 22px;
+  width: 22px;
   border-radius: 6px;
 }
 
 .public-wall-logo span {
   font-family: var(--font-display, 'Instrument Serif', serif);
   font-size: 13px;
-  color: var(--text-primary, #1a1814);
+  font-weight: 600;
+  color: #fafafa;
 }
 
 .public-reactions {
   pointer-events: auto;
-  display: flex;
-  flex-wrap: wrap;
-  max-width: min(320px, calc(100vw - 120px));
-  gap: 4px;
-  padding: 5px 8px;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
   border-radius: var(--r-pill, 999px);
-  background: rgba(255, 252, 246, 0.88);
-  border: 1px solid rgba(60, 50, 40, 0.08);
-  box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(12px);
+  background: rgba(20, 20, 24, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(14px);
+  max-width: min(640px, calc(100vw - 32px));
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.public-reactions::-webkit-scrollbar {
+  display: none;
 }
 
 .public-reaction-btn {
-  display: flex;
-  flex-direction: column;
+  display: inline-flex;
   align-items: center;
-  gap: 0;
-  min-width: 32px;
-  padding: 2px 3px;
-  border-radius: 8px;
+  justify-content: center;
+  gap: 4px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 999px;
   border: none;
   background: transparent;
   cursor: pointer;
   transition: background 0.12s, transform 0.12s;
+  flex-shrink: 0;
 }
 
 .public-reaction-btn:hover {
-  background: rgba(60, 50, 40, 0.06);
+  background: rgba(255, 255, 255, 0.08);
   transform: translateY(-1px);
 }
 
@@ -143,20 +183,35 @@
 
 .reaction-burst-particle {
   position: absolute;
-  font-size: clamp(1.25rem, 4vw, 2rem);
+  font-size: clamp(1.6rem, 5vw, 2.6rem);
   line-height: 1;
   pointer-events: none;
   will-change: transform, opacity;
+  /* Subtle glow so the emoji reads on any background */
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+}
+
+/* Big center pop that follows every reaction click — bigger, brighter, and
+ * positioned at screen center via translate so left/top represent the centre. */
+.reaction-burst-hero {
+  position: absolute;
+  font-size: clamp(4rem, 14vw, 9rem);
+  line-height: 1;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  will-change: transform, opacity;
+  filter: drop-shadow(0 10px 32px rgba(0, 0, 0, 0.45));
 }
 
 .public-reaction-emoji {
-  font-size: 16px;
-  line-height: 1.2;
+  font-size: 18px;
+  line-height: 1;
 }
 
 .public-reaction-count {
   font-family: ui-monospace, monospace;
-  font-size: 9px;
-  color: var(--text-tertiary, #8e8a82);
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
   line-height: 1;
 }

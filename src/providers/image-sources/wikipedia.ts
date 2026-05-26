@@ -15,18 +15,24 @@ type WikiPageImages = {
  * search, so concrete subjects like "train" actually return the article's
  * hero photo. Free, no key, public CORS-friendly endpoint.
  */
-export async function searchWikipediaImages(q: string, limit = 12): Promise<ImageSourceResult> {
+export async function searchWikipediaImages(
+  q: string,
+  limit = 12,
+  page = 1,
+): Promise<ImageSourceResult> {
   const query = q.trim()
   if (query.length < 2) return { items: [], source: 'Wikipedia' }
 
   try {
     // Step 1 — find topical article pageids.
+    const offset = Math.max(0, (page - 1) * limit)
     const searchParams = new URLSearchParams({
       action: 'query',
       list: 'search',
       srsearch: query,
       srnamespace: '0',
       srlimit: String(Math.min(limit, 20)),
+      sroffset: String(offset),
       format: 'json',
       origin: '*',
     })

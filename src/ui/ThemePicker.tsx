@@ -156,13 +156,13 @@ export function ThemePicker() {
           aria-label="Page and workspace backgrounds"
         >
           <p className="mb-1 px-1 text-[10px] font-black uppercase tracking-widest text-neutral-500">
-            Page surface (1600×1000)
+            Themes — page surface (1600×1000)
           </p>
           <p className="mb-2 px-1 text-[9px] text-neutral-600">
-            Presets style the artboard; workspace stays themed around it.
+            Presets style the artboard; workspace stays themed around it. Built-ins + community in one gallery.
           </p>
 
-          <div className="max-h-[min(16rem,45vh)] space-y-3 overflow-y-auto pr-0.5">
+          <div className="max-h-[min(20rem,55vh)] space-y-3 overflow-y-auto pr-0.5">
             {THEME_CATEGORIES.map((cat) => {
               const items = themeList.filter((t) => t.category === cat.id)
               if (items.length === 0) return null
@@ -208,31 +208,32 @@ export function ThemePicker() {
                 </div>
               )
             })}
-          </div>
 
-          {community.length > 0 && (
-            <div className="mt-3 border-t border-neutral-800 pt-3">
-              <p className="mb-2 px-1 text-[9px] font-bold uppercase tracking-wider text-neutral-600">
-                Community themes (/public/themes)
-              </p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {community.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => applyCommunity(t)}
-                    className="wall-theme-option rounded-xl border border-neutral-800 bg-neutral-900/80 p-2 text-left hover:border-neutral-600"
-                  >
-                    <span
-                      className="mb-1 block h-8 w-full rounded-md border border-white/10"
-                      style={{ background: t.pageBackground, backgroundSize: t.pageBackgroundSize }}
-                    />
-                    <span className="text-[11px] font-bold text-white">{t.label}</span>
-                  </button>
-                ))}
+            {community.length > 0 && (
+              <div>
+                <p className="mb-1.5 px-1 text-[9px] font-bold uppercase tracking-wider text-neutral-600">
+                  Community
+                </p>
+                <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                  {community.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      role="option"
+                      onClick={() => applyCommunity(t)}
+                      className="wall-theme-option flex flex-col items-start gap-1 rounded-xl border border-neutral-800 bg-neutral-900/80 p-2 text-left transition hover:border-neutral-600"
+                    >
+                      <span
+                        className="block h-8 w-full rounded-md border border-white/10"
+                        style={{ background: t.pageBackground, backgroundSize: t.pageBackgroundSize }}
+                      />
+                      <span className="text-[11px] font-bold leading-tight text-white">{t.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           <div className="mt-3 border-t border-neutral-800 pt-3">
             <p className="mb-2 flex items-center gap-1 px-1 text-[9px] font-bold uppercase tracking-wider text-neutral-600">

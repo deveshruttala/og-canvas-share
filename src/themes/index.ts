@@ -704,6 +704,102 @@ export const themes: Record<ThemeId, ThemeConfig> = {
     boardColor: 'white',
     boardFill: 'solid',
   },
+  holographic: {
+    id: 'holographic',
+    label: 'Holographic',
+    category: 'color',
+    description: 'Iridescent foil — sapphire → magenta → mint',
+    background:
+      'conic-gradient(from 220deg at 50% 50%, #a5b4fc 0%, #f0abfc 25%, #5eead4 50%, #fde68a 75%, #a5b4fc 100%)',
+    canvasClass: 'shadow-wall-lg border border-white/20',
+    defaultAccent: '#7c3aed',
+    boardColor: 'violet',
+    boardFill: 'solid',
+  },
+  dune: {
+    id: 'dune',
+    label: 'Dune',
+    category: 'color',
+    description: 'Sand dunes at golden hour',
+    background:
+      'radial-gradient(ellipse at 30% 80%, #fde68a 0%, transparent 50%), linear-gradient(160deg, #fed7aa 0%, #d97706 70%, #92400e 100%)',
+    canvasClass: 'shadow-wall border border-amber-300/40',
+    defaultAccent: '#7c2d12',
+    boardColor: 'orange',
+    boardFill: 'solid',
+  },
+  lagoon: {
+    id: 'lagoon',
+    label: 'Lagoon',
+    category: 'color',
+    description: 'Tropical teal water with coral accents',
+    background:
+      'radial-gradient(ellipse at 20% 20%, #5eead4 0%, transparent 45%), linear-gradient(180deg, #0e7490 0%, #155e75 50%, #134e4a 100%)',
+    canvasClass: 'shadow-wall-lg border border-teal-400/30',
+    defaultAccent: '#f43f5e',
+    boardColor: 'green',
+    boardFill: 'solid',
+  },
+  'peach-fuzz': {
+    id: 'peach-fuzz',
+    label: 'Peach Fuzz',
+    category: 'color',
+    description: 'Soft peach studio — warm + welcoming',
+    background:
+      'radial-gradient(ellipse at 25% 25%, #fed7aa 0%, transparent 50%), linear-gradient(135deg, #ffedd5 0%, #fdba74 60%, #fb923c 100%)',
+    canvasClass: 'shadow-wall border border-orange-200',
+    defaultAccent: '#c2410c',
+    boardColor: 'orange',
+    boardFill: 'solid',
+  },
+  'sage-paper': {
+    id: 'sage-paper',
+    label: 'Sage Paper',
+    category: 'minimal',
+    description: 'Quiet sage on warm paper — botanical journal',
+    background:
+      'repeating-linear-gradient(transparent, transparent 27px, #d6e3d3 27px, #d6e3d3 28px), #f4f1e8',
+    canvasClass: 'shadow-wall border border-green-200/60',
+    defaultAccent: '#365314',
+    boardColor: 'light-green',
+    boardFill: 'solid',
+  },
+  gameboy: {
+    id: 'gameboy',
+    label: 'Game Boy',
+    category: 'color',
+    description: 'Pea-green LCD with pixel grid',
+    background:
+      'repeating-linear-gradient(0deg, #9bbc0f 0px, #9bbc0f 4px, #8bac0f 4px, #8bac0f 8px), #9bbc0f',
+    canvasClass: 'shadow-wall-lg border-4 border-[#306230]',
+    defaultAccent: '#0f380f',
+    boardColor: 'green',
+    boardFill: 'solid',
+  },
+  retrogrid: {
+    id: 'retrogrid',
+    label: 'Retro Grid',
+    category: 'dark',
+    description: '80s magenta horizon over a perspective grid',
+    background:
+      'linear-gradient(180deg, #1e1b4b 0%, #581c87 50%, #be185d 80%, #f97316 100%)',
+    canvasClass: 'shadow-wall-lg border border-pink-500/40',
+    defaultAccent: '#f0abfc',
+    boardColor: 'violet',
+    boardFill: 'solid',
+  },
+  oxblood: {
+    id: 'oxblood',
+    label: 'Oxblood',
+    category: 'dark',
+    description: 'Deep merlot with old-leather warmth',
+    background:
+      'radial-gradient(circle at 30% 20%, #7f1d1d 0%, transparent 45%), linear-gradient(160deg, #450a0a 0%, #1c0606 100%)',
+    canvasClass: 'shadow-wall-lg border border-red-900/40',
+    defaultAccent: '#f59e0b',
+    boardColor: 'red',
+    boardFill: 'solid',
+  },
 }
 
 export const themeList = Object.values(themes)

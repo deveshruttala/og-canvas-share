@@ -45,8 +45,9 @@ type WikiGifHit = {
 }
 
 /** Wikimedia Commons GIFs — free, no API key, reliable. */
-async function searchWikimediaGifs(q: string, limit = 24): Promise<OmniItem[]> {
+async function searchWikimediaGifs(q: string, limit = 24, page = 1): Promise<OmniItem[]> {
   try {
+    const offset = Math.max(0, (page - 1) * limit)
     const params = new URLSearchParams({
       action: 'query',
       format: 'json',
@@ -54,6 +55,7 @@ async function searchWikimediaGifs(q: string, limit = 24): Promise<OmniItem[]> {
       gsrsearch: `filetype:image ${q} .gif`,
       gsrnamespace: '6',
       gsrlimit: String(Math.min(limit, 30)),
+      gsroffset: String(offset),
       prop: 'imageinfo',
       iiprop: 'url|mime',
       iiurlwidth: '320',
@@ -89,9 +91,9 @@ async function searchWikimediaGifs(q: string, limit = 24): Promise<OmniItem[]> {
 }
 
 /** Free CC / Wikimedia animated GIFs — no API key. */
-async function searchOpenverseGifs(q: string, limit = 24): Promise<OmniItem[]> {
+async function searchOpenverseGifs(q: string, limit = 24, page = 1): Promise<OmniItem[]> {
   try {
-    const url = `${OPENVERSE_GIF_BASE}?q=${encodeURIComponent(q)}&page_size=${limit}&extension=gif`
+    const url = `${OPENVERSE_GIF_BASE}?q=${encodeURIComponent(q)}&page_size=${limit}&page=${Math.max(1, page)}&extension=gif`
     const res = await fetch(url)
     if (!res.ok) {
       console.warn('[gifs] Openverse GIF search failed', res.status)
@@ -259,7 +261,11 @@ function toPickItem(item: OmniItem): GifPickItem {
   }
 }
 
-export async function searchGifs(query: string, browse = false): Promise<ProviderResult | null> {
+export async function searchGifs(
+  query: string,
+  browse = false,
+  page = 1,
+): Promise<ProviderResult | null> {
   const raw = query.trim()
   if (raw.length < 2 && !browse) return null
   const q = raw.length < 2 ? 'fun' : raw
@@ -268,8 +274,8 @@ export async function searchGifs(query: string, browse = false): Promise<Provide
   const tenorKey = getProviderKey('tenor')
 
   const [openverse, wikimedia, giphy, tenor] = await Promise.all([
-    searchOpenverseGifs(q, 20),
-    searchWikimediaGifs(q, 16),
+    searchOpenverseGifs(q, 20, page),
+    searchWikimediaGifs(q, 16, page),
     searchGiphy(q, giphyKey, 20),
     searchTenor(q, tenorKey, 20),
   ])

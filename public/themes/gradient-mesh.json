@@ -1,0 +1,10 @@
+{
+  "id": "gradient-mesh",
+  "label": "Gradient Mesh",
+  "description": "Soft pastel mesh — purple, pink, mint, gold",
+  "category": "community",
+  "workspaceBackground": "radial-gradient(circle at 20% 30%, #c4b5fd 0%, transparent 40%), radial-gradient(circle at 80% 20%, #fbcfe8 0%, transparent 40%), radial-gradient(circle at 60% 80%, #99f6e4 0%, transparent 40%), radial-gradient(circle at 30% 90%, #fde68a 0%, transparent 40%), #fdf4ff",
+  "pageBackground": "radial-gradient(circle at 25% 25%, #ddd6fe 0%, transparent 50%), radial-gradient(circle at 75% 75%, #fbcfe8 0%, transparent 50%), #fdf4ff",
+  "defaultAccent": "#7c3aed",
+  "canvasClass": "border border-violet-200 shadow-wall"
+}

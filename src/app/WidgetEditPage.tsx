@@ -7,7 +7,7 @@ import { StatsDashboard } from '@/ui/StatsDashboard'
 import { ShareEmbedPanel } from '@/ui/share/ShareEmbedPanel'
 import { fetchWidget, updateStandaloneWidget } from '@/lib/widget-store'
 import { useAuthStore } from '@/store/auth.store'
-import { shareBaseUrl, versionedUrl } from '@/lib/share-urls'
+import { shareBaseUrl } from '@/lib/share-urls'
 import { type WidgetInstance, type WidgetTheme } from '@/types/widget-instance'
 import { cn } from '@/lib/cn'
 
@@ -32,7 +32,7 @@ export function WidgetEditPage() {
   }
 
   const isOwner = !user || widget.ownerId === user.id || widget.ownerId === 'local'
-  const publicUrl = versionedUrl(shareBaseUrl({ kind: 'widget', id: widget.id }), widget.shareVersion ?? 1)
+  const publicUrl = shareBaseUrl({ kind: 'widget', id: widget.id })
 
   const saveTheme = async (patch: Partial<WidgetTheme>) => {
     const updated = await updateStandaloneWidget(widget, { theme: { ...widget.theme, ...patch } })
@@ -44,14 +44,6 @@ export function WidgetEditPage() {
     const updated = await updateStandaloneWidget(widget, { config: { ...widget.config, ...config } })
     setWidget(updated)
     toast.success('Saved')
-  }
-
-  const bumpVersion = async () => {
-    const updated = await updateStandaloneWidget(widget, {
-      shareVersion: (widget.shareVersion ?? 1) + 1,
-    })
-    setWidget(updated)
-    toast.success('Share version bumped')
   }
 
   return (
@@ -131,9 +123,6 @@ export function WidgetEditPage() {
                   onBlur={(e) => void saveConfig({ label: e.target.value, title: e.target.value })}
                 />
               </label>
-              <button type="button" onClick={() => void bumpVersion()} className="text-xs text-[#beee1d] hover:underline">
-                Bump share version (cache buster)
-              </button>
             </div>
           )}
 

@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { X, ExternalLink, RefreshCw } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { X, ExternalLink } from 'lucide-react'
 import type { ShareSubject } from '@/lib/share-urls'
-import { linkedInInspectorUrl, linkedInShareIntent, pngUrl, shareBaseUrl, versionedUrl } from '@/lib/share-urls'
+import { linkedInInspectorUrl, linkedInShareIntent, pngUrl, shareBaseUrl } from '@/lib/share-urls'
 
 const CAPTIONS = [
   (u: string) => `I made a living wall — it updates wherever it's embedded. Take a look 👇 ${u}`,
@@ -13,16 +12,14 @@ const CAPTIONS = [
 type Props = {
   subject: ShareSubject
   title: string
-  shareVersion: number
   onClose: () => void
-  onBumpVersion: () => void
 }
 
-export function LinkedInWizard({ subject, title, shareVersion, onClose, onBumpVersion }: Props) {
+export function LinkedInWizard({ subject, title, onClose }: Props) {
   const [step, setStep] = useState(1)
   const [captionIdx, setCaptionIdx] = useState(0)
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  const url = versionedUrl(shareBaseUrl(subject, origin), shareVersion)
+  const url = shareBaseUrl(subject, origin)
   const ogImage = pngUrl(subject, { og: true }, origin)
   const caption = CAPTIONS[captionIdx]!(url)
 
@@ -73,7 +70,7 @@ export function LinkedInWizard({ subject, title, shareVersion, onClose, onBumpVe
               Try another variant
             </button>
             <button type="button" onClick={() => setStep(3)} className="w-full rounded-xl bg-[#0a66c2] py-3 text-sm font-bold">
-              Next: Versioned URL
+              Next: Share URL
             </button>
           </div>
         )}
@@ -81,16 +78,6 @@ export function LinkedInWizard({ subject, title, shareVersion, onClose, onBumpVe
         {step === 3 && (
           <div className="space-y-4">
             <code className="block break-all rounded-lg bg-black/50 p-3 text-xs">{url}</code>
-            <button
-              type="button"
-              onClick={() => {
-                onBumpVersion()
-                toast.success('Fresh URL ready for scrapers')
-              }}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#beee1d]/30 py-2 text-xs font-bold text-[#beee1d]"
-            >
-              <RefreshCw className="h-3.5 w-3.5" /> Bump version first
-            </button>
             <a
               href={linkedInShareIntent(url, caption)}
               target="_blank"

@@ -322,4 +322,48 @@ export const PAGE_BACKGROUNDS: Record<ThemeId, PageBackgroundStyle> = {
     pageFallbackColor: '#0a0a0a',
     pageClass: 'wall-page-shadow',
   },
+  holographic: {
+    pageBackground:
+      'conic-gradient(from 200deg at 50% 50%, #c7d2fe 0%, #f5d0fe 25%, #99f6e4 50%, #fef3c7 75%, #c7d2fe 100%)',
+    pageFallbackColor: '#e0e7ff',
+    pageClass: 'wall-page-shadow',
+  },
+  dune: {
+    pageBackground: 'linear-gradient(160deg, #fef3c7 0%, #fed7aa 50%, #fb923c 100%)',
+    pageFallbackColor: '#fed7aa',
+    pageClass: 'wall-page-shadow',
+  },
+  lagoon: {
+    pageBackground: 'linear-gradient(180deg, #ccfbf1 0%, #5eead4 60%, #14b8a6 100%)',
+    pageFallbackColor: '#5eead4',
+    pageClass: 'wall-page-shadow',
+  },
+  'peach-fuzz': {
+    pageBackground: 'linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%)',
+    pageFallbackColor: '#fed7aa',
+    pageClass: 'wall-page-shadow',
+  },
+  'sage-paper': {
+    pageBackground:
+      'repeating-linear-gradient(transparent, transparent 26px, #d6e3d3 26px, #d6e3d3 27px), #faf8f0',
+    pageFallbackColor: '#faf8f0',
+    pageClass: 'wall-page-shadow',
+  },
+  gameboy: {
+    pageBackground:
+      'repeating-linear-gradient(0deg, #9bbc0f 0px, #9bbc0f 3px, #8bac0f 3px, #8bac0f 6px), #9bbc0f',
+    pageFallbackColor: '#9bbc0f',
+    pageClass: 'wall-page-shadow',
+  },
+  retrogrid: {
+    pageBackground:
+      'linear-gradient(180deg, #312e81 0%, #6b21a8 45%, #db2777 80%, #f97316 100%), repeating-linear-gradient(90deg, transparent 0px, transparent 48px, rgba(255,255,255,0.06) 48px, rgba(255,255,255,0.06) 49px)',
+    pageFallbackColor: '#312e81',
+    pageClass: 'wall-page-shadow',
+  },
+  oxblood: {
+    pageBackground: 'linear-gradient(160deg, #7f1d1d 0%, #450a0a 100%)',
+    pageFallbackColor: '#450a0a',
+    pageClass: 'wall-page-shadow',
+  },
 }

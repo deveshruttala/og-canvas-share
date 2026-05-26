@@ -24,21 +24,15 @@ export const WALL_CAMERA = {
   },
 }
 
-/** Public viewer — wall fills viewport, no pan/zoom */
+/** Public viewer — wall fills viewport, no pan/zoom.
+ * No `constraints` block so coverWallPage() can place the camera freely
+ * (constraints would snap the camera back to a fit position). */
 export const PUBLIC_WALL_CAMERA = {
   isLocked: true,
   wheelBehavior: 'none' as const,
   panSpeed: 0,
   zoomSpeed: 0,
   zoomSteps: [1],
-  constraints: {
-    bounds: { x: 0, y: 0, w: CANVAS_WIDTH, h: CANVAS_HEIGHT },
-    padding: { x: 0, y: 0 },
-    origin: { x: 0.5, y: 0.5 },
-    initialZoom: 'fit-max' as const,
-    baseZoom: 'fit-max' as const,
-    behavior: 'contain' as const,
-  },
 }
 
 export const WALL_TLDRAW_OPTIONS = {
@@ -165,9 +159,33 @@ export function applyWallTheme(editor: Editor, theme: ThemeConfig) {
   })
 }
 
-/** Zoom camera to the artboard bounds. */
-export function zoomToWallPage(editor: Editor, opts?: { animate?: boolean }) {
+/** Zoom camera to the artboard bounds.
+ *
+ * - `fit` (editor): bounds fit inside the viewport with 48px padding —
+ *   you can see the artboard edge.
+ * - `cover` (public view): manually computes scale = max(vw/CW, vh/CH) and
+ *   centers the canvas so it FILLS the viewport (possibly cropping edges).
+ *   Tldraw's built-in zoomToBounds always fits, never covers. */
+export function zoomToWallPage(
+  editor: Editor,
+  opts?: { animate?: boolean; mode?: 'fit' | 'cover' },
+) {
   const bounds = editor.getShapePageBounds(WALL_FRAME_ID as never)
+  const mode = opts?.mode ?? 'fit'
+
+  if (mode === 'cover' && bounds) {
+    const vp = editor.getViewportScreenBounds()
+    const z = Math.max(vp.w / bounds.w, vp.h / bounds.h)
+    // Center the bounding box in the viewport.
+    const cx = bounds.x + bounds.w / 2 - vp.w / (2 * z)
+    const cy = bounds.y + bounds.h / 2 - vp.h / (2 * z)
+    editor.setCamera(
+      { x: -cx, y: -cy, z },
+      { animation: opts?.animate === false ? { duration: 0 } : { duration: 300 } },
+    )
+    return
+  }
+
   if (bounds) {
     editor.zoomToBounds(bounds, {
       animation: opts?.animate === false ? { duration: 0 } : { duration: 300 },
@@ -261,9 +279,17 @@ export function attachWallDocumentSync(
   }
 }
 
+/** Public mode: the React stage is a fixed 1600×1000 div that gets CSS-scaled
+ * to cover the viewport. So we just need tldraw's camera at the identity:
+ * camera (0,0,1) maps page origin to screen origin, and the wall frame
+ * (0..1600 × 0..1000) renders pixel-for-pixel inside the 1600×1000 container.
+ *
+ * We temporarily unlock to write the camera, then re-lock so user input
+ * (wheel/pinch) can't drift it. */
 export function fitPublicWall(editor: Editor) {
+  editor.setCameraOptions({ ...PUBLIC_WALL_CAMERA, isLocked: false })
+  editor.setCamera({ x: 0, y: 0, z: 1 }, { animation: { duration: 0 } })
   editor.setCameraOptions(PUBLIC_WALL_CAMERA)
-  zoomToWallPage(editor, { animate: false })
 }
 
 export function setWallReadonly(editor: Editor, readonly: boolean) {

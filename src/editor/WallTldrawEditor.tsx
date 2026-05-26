@@ -118,12 +118,12 @@ function WallTldrawEditorInner({ readOnly = false, className }: Props) {
         resetTimelineMarks(editor)
       }
 
-      let onResize: (() => void) | undefined
       if (readOnlyRef.current) {
-        onResize = () => fitPublicWall(editor)
-        window.addEventListener('resize', onResize)
+        // CSS handles viewport-cover scaling now; tldraw just needs identity
+        // camera so the 1600×1000 page renders pixel-for-pixel in its container.
         requestAnimationFrame(() => fitPublicWall(editor))
       }
+      const onResize: (() => void) | undefined = undefined
 
       return () => {
         unsubSync()

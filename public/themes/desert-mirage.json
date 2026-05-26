@@ -1,0 +1,10 @@
+{
+  "id": "desert-mirage",
+  "label": "Desert Mirage",
+  "description": "Sun-baked terracotta with rose dust",
+  "category": "community",
+  "workspaceBackground": "radial-gradient(ellipse at 25% 0%, #fb923c 0%, transparent 45%), radial-gradient(ellipse at 80% 100%, #fda4af 0%, transparent 40%), linear-gradient(170deg, #7c2d12 0%, #1c0a06 100%)",
+  "pageBackground": "linear-gradient(150deg, #fde68a 0%, #fdba74 50%, #f97316 100%)",
+  "defaultAccent": "#9a3412",
+  "canvasClass": "border border-orange-400/30 shadow-[0_0_64px_rgba(251,146,60,0.15)]"
+}

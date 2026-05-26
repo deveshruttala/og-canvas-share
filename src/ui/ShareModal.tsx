@@ -2,7 +2,7 @@
  * Expanded share modal — Link, Image, Embed, Social, Track, QR, API tabs.
  */
 import { lazy, Suspense, useState } from 'react'
-import { X, Copy, Download, Share2, ExternalLink, RefreshCw } from 'lucide-react'
+import { X, Copy, Download, Share2, ExternalLink } from 'lucide-react'
 import { useCanvasStore } from '@/store/canvas.store'
 import type { CanvasDoc } from '@/types/canvas'
 import { useUiStore } from '@/store/ui.store'
@@ -20,17 +20,15 @@ import {
   shareBaseUrl,
   sseUrl,
   svgUrl,
-  versionedUrl,
   wallliveUrl,
 } from '@/lib/share-urls'
 import { api, isApiConfigured } from '@/lib/api'
-import { isLocalAuth } from '@/lib/auth/config'
+import { isLocalAuth, isSupabaseAuth } from '@/lib/auth/config'
 import {
   canPublishWalls,
   publicWallSlug,
   publishWallLocally,
-  saveWallDraftLocally,
-  syncPublishedSnapshot,
+  publishWallToSupabase,
 } from '@/lib/publish-wall'
 import { prepareDocForShare, resolveWallExportElement } from '@/lib/wall-share-prep'
 import { getWallEditor, zoomToWallPage } from '@/editor/wall-editor-api'
@@ -58,33 +56,9 @@ export function ShareModal() {
 
   const username = user ? publicWallSlug(user.username) : 'local'
   const subject = { kind: 'wall' as const, id: username }
-  const shareVersion = (doc.meta as { shareVersion?: number }).shareVersion ?? 1
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  const publicUrl = versionedUrl(shareBaseUrl(subject, origin), shareVersion)
+  const publicUrl = shareBaseUrl(subject, origin)
   const embed = embedUrl(subject, origin)
-
-  const bumpVersion = async () => {
-    const fresh = await prepareDocForShare()
-    const next = shareVersion + 1
-    const bumped = {
-      ...fresh,
-      meta: { ...fresh.meta, shareVersion: next, updatedAt: new Date().toISOString() },
-    }
-    useCanvasStore.setState({ doc: bumped })
-    if (user && isApiConfigured()) {
-      try {
-        await api.saveWall(user.username, bumped)
-      } catch {
-        /* local ok */
-      }
-    } else if (user && isLocalAuth()) {
-      await saveWallDraftLocally(user.username, bumped)
-      if (bumped.meta.publishedAt) {
-        await syncPublishedSnapshot(user.username, bumped)
-      }
-    }
-    toast.success(`Version bumped to v${next}`)
-  }
 
   const publishWall = async () => {
     if (!user) {
@@ -103,7 +77,9 @@ export function ShareModal() {
         meta: { ...fresh.meta, updatedAt: now, publishedAt: now },
       }
       let published: CanvasDoc
-      if (isLocalAuth()) {
+      if (isSupabaseAuth()) {
+        published = await publishWallToSupabase(user.username, toPublish)
+      } else if (isLocalAuth()) {
         published = await publishWallLocally(user.username, toPublish)
       } else {
         published = toPublish
@@ -112,8 +88,8 @@ export function ShareModal() {
         try {
           await api.saveWall(publicWallSlug(user.username), published)
         } catch (apiErr) {
-          if (!isLocalAuth()) throw apiErr
-          console.warn('[publish] API save failed; local snapshot saved', apiErr)
+          if (!isLocalAuth() && !isSupabaseAuth()) throw apiErr
+          console.warn('[publish] API save failed; primary store saved', apiErr)
         }
       }
       useCanvasStore.setState({ doc: published })
@@ -160,9 +136,7 @@ export function ShareModal() {
         <LinkedInWizard
           subject={subject}
           title={doc.title}
-          shareVersion={shareVersion}
           onClose={() => setShowLinkedIn(false)}
-          onBumpVersion={() => void bumpVersion()}
         />
       </Suspense>
     )
@@ -224,34 +198,46 @@ export function ShareModal() {
                 </p>
               )}
               <div>
-                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-white/40">Public URL (v{shareVersion})</p>
+                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-white/40">Public URL</p>
                 <div className="flex gap-2">
-                  <code className="flex-1 truncate rounded-lg bg-black/50 px-3 py-2 text-xs">{publicUrl}</code>
-                  <button type="button" className="rounded-lg bg-white/10 px-3" onClick={() => copyText(publicUrl, 'Link')}>
+                  <input
+                    type="text"
+                    readOnly
+                    value={publicUrl}
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="flex-1 truncate rounded-lg bg-black/50 px-3 py-2 text-xs text-white outline-none focus:ring-2 focus:ring-[#beee1d]/60"
+                    aria-label="Public wall URL"
+                  />
+                  <button
+                    type="button"
+                    className="rounded-lg bg-white/10 px-3"
+                    onClick={() => copyText(publicUrl, 'Link')}
+                    title="Copy link"
+                  >
                     <Copy className="h-4 w-4" />
                   </button>
-                  <a href={publicUrl} className="rounded-lg bg-white/10 px-3 py-2" target="_blank" rel="noreferrer">
+                  <a
+                    href={publicUrl}
+                    className="rounded-lg bg-white/10 px-3 py-2"
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Open in new tab"
+                  >
                     <ExternalLink className="h-4 w-4" />
                   </a>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => void bumpVersion()} className="flex items-center gap-1 rounded-lg border border-[#beee1d]/30 px-3 py-2 text-xs font-bold text-[#beee1d]">
-                  <RefreshCw className="h-3.5 w-3.5" /> Bump version
-                </button>
-                {user && (
-                  <button type="button" onClick={() => void publishWall()} className="rounded-lg bg-[#beee1d] px-3 py-2 text-xs font-black text-black">
+              {user && (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void publishWall()}
+                    className="rounded-lg bg-[#beee1d] px-3 py-2 text-xs font-black text-black hover:bg-[#a6cf17]"
+                  >
                     Publish wall
                   </button>
-                )}
-              </div>
-              <p className="text-xs text-neutral-500">
-                Install{' '}
-                <a href="https://github.com/wall-app/extension" className="text-[#beee1d] hover:underline" target="_blank" rel="noreferrer">
-                  Wall Live extension
-                </a>{' '}
-                for live LinkedIn previews (Chrome/Firefox).
-              </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -299,9 +285,6 @@ export function ShareModal() {
               >
                 Refresh on LinkedIn →
               </a>
-              <p className="text-xs text-neutral-500">
-                X may show stale previews for up to 7 days. Bump version for a fresh URL.
-              </p>
             </div>
           )}
 

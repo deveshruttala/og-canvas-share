@@ -30,19 +30,23 @@ function prefersMuseumCatalog(q: string): boolean {
   )
 }
 
-export async function searchImages(query: string, browse = false): Promise<ProviderResult | null> {
+export async function searchImages(
+  query: string,
+  browse = false,
+  page = 1,
+): Promise<ProviderResult | null> {
   const raw = query.trim()
   if (raw.length < 2 && !browse) return null
   const q = raw.length < 2 ? 'landscape nature' : raw
   const museumMode = prefersMuseumCatalog(q)
 
   const [openverse, pixabay, pexels, unsplash, wikipedia, wiki, met, artic] = await Promise.all([
-    searchOpenverseImages(q, 28),
+    searchOpenverseImages(q, 28, page),
     searchPixabayImages(q, 20),
     searchPexelsImages(q, 20),
     searchUnsplashImages(q, 12),
-    searchWikipediaImages(q, 12),
-    searchWikimediaImages(q, museumMode ? 16 : 10),
+    searchWikipediaImages(q, 12, page),
+    searchWikimediaImages(q, museumMode ? 16 : 10, page),
     museumMode ? searchMetMuseumImages(q, 8) : Promise.resolve({ items: [], source: 'Met Museum' }),
     museumMode ? searchArticImages(q, 8) : Promise.resolve({ items: [], source: 'Art Institute' }),
   ])

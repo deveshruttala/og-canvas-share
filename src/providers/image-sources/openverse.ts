@@ -23,11 +23,16 @@ function isStaticPhoto(hit: OpenverseHit): boolean {
 }
 
 /** Openverse — CC stock photos, no API key (proxied). */
-export async function searchOpenverseImages(q: string, limit = 28): Promise<ImageSourceResult> {
+export async function searchOpenverseImages(
+  q: string,
+  limit = 28,
+  page = 1,
+): Promise<ImageSourceResult> {
   try {
     const params = new URLSearchParams({
       q,
       page_size: String(Math.min(limit, 50)),
+      page: String(Math.max(1, page)),
       license: 'cc0,pdm',
     })
     const res = await fetch(`${OPENVERSE_BASE}?${params}`)
