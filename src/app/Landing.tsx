@@ -80,8 +80,8 @@ export function Landing() {
           <div className="landing-canvas-head">
             <h2>Five ways to use your wall</h2>
             <p>
-              Creator profile, product launch, fitness coach, design studio, or local café — each layout is
-              intentionally scattered, like a real canvas.
+              Creator portfolio, product launch ad, album drop, save-the-date, or café menu — each layout
+              is intentionally scattered, like a real canvas.
             </p>
           </div>
           <LandingCanvasShowcase />

@@ -236,7 +236,7 @@ export function Editor() {
         </div>
       </header>
 
-      <div className="wall-editor-stage relative min-h-0 flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
+      <div className="wall-editor-stage relative min-h-0 flex-1">
         <WallTldrawEditor />
         <DrawBrushPanel />
         <SessionTimeline />

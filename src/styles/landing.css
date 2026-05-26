@@ -710,33 +710,25 @@
     linear-gradient(160deg, #0a0f0a 0%, #0c0c12 100%);
 }
 
-.wall-sample-fitflow {
+.wall-sample-loopline {
   background:
-    radial-gradient(circle at 70% 20%, rgba(249, 115, 22, 0.2), transparent 40%),
-    radial-gradient(circle at 15% 80%, rgba(34, 197, 94, 0.15), transparent 42%),
-    linear-gradient(145deg, #0f1410 0%, #0c1218 100%);
+    radial-gradient(circle at 18% 22%, rgba(168, 85, 247, 0.28), transparent 42%),
+    radial-gradient(circle at 82% 72%, rgba(236, 72, 153, 0.22), transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.06), transparent 55%),
+    linear-gradient(160deg, #0d0820 0%, #110a18 100%);
 }
 
-.wall-sample-studio {
+.wall-sample-maya {
   background:
-    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.06), transparent 50%),
-    linear-gradient(180deg, #1a1814 0%, #12100e 100%);
-}
-
-.wall-sample-studio .wall-tile {
-  color: #1a1814;
-  border-color: rgba(0, 0, 0, 0.08);
-  background: rgba(255, 254, 247, 0.92);
-}
-
-.wall-sample-studio .wall-tile-kicker {
-  color: rgba(87, 83, 78, 0.85);
+    radial-gradient(circle at 22% 18%, rgba(251, 207, 232, 0.35), transparent 48%),
+    radial-gradient(circle at 80% 80%, rgba(187, 211, 165, 0.22), transparent 45%),
+    linear-gradient(170deg, #f3ead9 0%, #e9dcc4 100%);
 }
 
 .wall-sample-cafe {
   background:
-    radial-gradient(circle at 30% 25%, rgba(180, 83, 9, 0.15), transparent 45%),
-    radial-gradient(circle at 85% 60%, rgba(234, 179, 8, 0.1), transparent 40%),
+    radial-gradient(circle at 30% 25%, rgba(180, 83, 9, 0.18), transparent 45%),
+    radial-gradient(circle at 85% 60%, rgba(234, 179, 8, 0.12), transparent 40%),
     linear-gradient(160deg, #1c1410 0%, #0f0c0a 100%);
 }
 
@@ -976,18 +968,6 @@
   grid-row: unset;
 }
 
-.wall-sample-fitflow .wall-tile-stat {
-  border-color: rgba(249, 115, 22, 0.35);
-  background: linear-gradient(160deg, rgba(249, 115, 22, 0.2), rgba(18, 18, 26, 0.92));
-}
-
-.wall-sample-fitflow .wall-tile-stat-num {
-  color: #fb923c;
-}
-
-.wall-sample-fitflow .wall-tile-stat-label {
-  color: rgba(251, 146, 60, 0.7);
-}
 
 .wall-tile-stat-num {
   font-size: 1.25rem;
@@ -1539,4 +1519,163 @@
   .wall-tile-bars span {
     animation: none !important;
   }
+}
+
+/* ===========================================================
+   Sample theme overrides — placed at end of file so they win
+   on source order against the base .wall-tile-* rules above.
+   =========================================================== */
+
+/* Wedding / Save the date — cream paper, blush, sage */
+.wall-sample-maya .wall-tile {
+  color: #2a221a;
+  border-color: rgba(120, 95, 60, 0.18);
+  background: rgba(255, 252, 244, 0.95);
+  box-shadow:
+    0 4px 18px rgba(120, 80, 60, 0.18),
+    0 0 0 1px rgba(120, 95, 60, 0.06);
+}
+
+.wall-sample-maya .wall-tile-kicker {
+  color: rgba(150, 100, 90, 0.85);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  letter-spacing: 0.18em;
+}
+
+.wall-sample-maya .wall-tile-hero {
+  background: linear-gradient(150deg, #fbe2e6 0%, #f7ebd6 100%);
+  border-color: rgba(187, 122, 110, 0.3);
+}
+
+.wall-sample-maya .wall-tile-hero h3 {
+  color: #2a221a;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 700;
+  font-size: 1.35rem;
+  letter-spacing: 0.01em;
+}
+
+.wall-sample-maya .wall-tile-hero p {
+  color: rgba(70, 50, 40, 0.75);
+}
+
+.wall-sample-maya .wall-tile-chips span {
+  background: rgba(187, 122, 110, 0.14);
+  color: rgba(70, 50, 40, 0.78);
+}
+
+.wall-sample-maya .wall-tile-stat {
+  border-color: rgba(187, 122, 110, 0.3);
+  background: linear-gradient(160deg, rgba(251, 207, 232, 0.6), rgba(255, 252, 244, 0.95));
+}
+
+.wall-sample-maya .wall-tile-stat-num {
+  color: #b8556b;
+}
+
+.wall-sample-maya .wall-tile-stat-label {
+  color: rgba(120, 70, 70, 0.7);
+}
+
+.wall-sample-maya .wall-tile-menu {
+  background: linear-gradient(145deg, #fef3e7, #f6e2cc);
+  border-color: rgba(187, 122, 110, 0.25);
+}
+
+.wall-sample-maya .wall-tile-menu-title {
+  color: #8a3a3a;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+}
+
+.wall-sample-maya .wall-tile-menu-body {
+  color: rgba(70, 50, 40, 0.7);
+}
+
+.wall-sample-maya .wall-tile-schedule {
+  background: rgba(255, 252, 244, 0.95);
+  color: #2a221a;
+  border-color: rgba(120, 95, 60, 0.18);
+}
+
+.wall-sample-maya .wall-tile-schedule-title {
+  color: rgba(150, 100, 90, 0.9);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  letter-spacing: 0.18em;
+}
+
+.wall-sample-maya .wall-tile-schedule-body {
+  color: rgba(70, 50, 40, 0.78);
+}
+
+.wall-sample-maya .wall-tile-link h3 {
+  color: #2a221a;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+}
+
+.wall-sample-maya .wall-tile-link p {
+  color: rgba(70, 50, 40, 0.7);
+}
+
+.wall-sample-maya .wall-tile-url {
+  color: #b8556b;
+}
+
+.wall-sample-maya .wall-tile-polaroid-frame {
+  background: linear-gradient(145deg, #d6c4a8, #b89e7e);
+}
+
+.wall-sample-maya .wall-tile-qr {
+  background: rgba(255, 252, 244, 0.95);
+}
+
+.wall-sample-maya .wall-tile-qr-code {
+  background-color: #2a221a;
+}
+
+.wall-sample-maya .wall-tile-qr p {
+  color: rgba(70, 50, 40, 0.75);
+}
+
+/* Music album / Loopline — synthwave purple + magenta */
+.wall-sample-loopline .wall-tile-hero {
+  background: linear-gradient(145deg, rgba(168, 85, 247, 0.45), rgba(236, 72, 153, 0.22) 60%, rgba(13, 8, 32, 0.92));
+  border-color: rgba(192, 132, 252, 0.35);
+}
+
+.wall-sample-loopline .wall-tile-kicker {
+  color: rgba(240, 171, 252, 0.85);
+}
+
+.wall-sample-loopline .wall-tile-stat {
+  border-color: rgba(236, 72, 153, 0.4);
+  background: linear-gradient(160deg, rgba(236, 72, 153, 0.22), rgba(168, 85, 247, 0.18) 60%, rgba(18, 18, 26, 0.92));
+}
+
+.wall-sample-loopline .wall-tile-stat-num {
+  color: #f0abfc;
+}
+
+.wall-sample-loopline .wall-tile-stat-label {
+  color: rgba(240, 171, 252, 0.7);
+}
+
+.wall-sample-loopline .wall-tile-menu {
+  background: linear-gradient(145deg, rgba(168, 85, 247, 0.22), rgba(18, 14, 32, 0.92));
+  border-color: rgba(192, 132, 252, 0.3);
+}
+
+.wall-sample-loopline .wall-tile-menu-title {
+  color: #f0abfc;
+}
+
+.wall-sample-loopline .wall-tile-menu-body {
+  color: rgba(240, 171, 252, 0.55);
+}
+
+.wall-sample-loopline .wall-tile-schedule-title {
+  color: rgba(240, 171, 252, 0.85);
 }

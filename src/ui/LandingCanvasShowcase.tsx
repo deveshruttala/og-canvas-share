@@ -162,7 +162,19 @@ function LandingTileView({ tile }: { tile: LandingTile }) {
     case 'polaroid':
       return (
         <article className={cn(base, 'wall-tile-polaroid')} style={tile.style}>
-          <div className="wall-tile-polaroid-frame" aria-hidden />
+          <div
+            className="wall-tile-polaroid-frame"
+            style={
+              tile.image
+                ? {
+                    backgroundImage: `url(${tile.image})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }
+                : undefined
+            }
+            aria-hidden
+          />
           {tile.title && <p className="wall-tile-polaroid-title">{tile.title}</p>}
           {tile.body && <p>{tile.body}</p>}
         </article>

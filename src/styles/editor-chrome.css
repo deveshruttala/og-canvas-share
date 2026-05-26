@@ -285,14 +285,14 @@
   z-index: 0;
 }
 
-/* Inspector HUD — bottom of canvas, above dock */
+/* Inspector HUD — top of canvas, below header, always visible */
 .wall-editor-hud {
-  position: absolute;
+  position: fixed;
   left: 50%;
-  bottom: calc(5.25rem + env(safe-area-inset-bottom));
-  z-index: 90;
+  top: calc(3.5rem + env(safe-area-inset-top));
+  z-index: 230;
   width: min(960px, calc(100% - 1.5rem));
-  max-height: min(42vh, 380px);
+  max-height: min(60vh, 480px);
   transform: translateX(-50%);
   padding: 0 0.75rem;
   pointer-events: none;
@@ -300,9 +300,9 @@
   scrollbar-width: thin;
 }
 
-/* Inspector rendered inside tldraw — fixed to viewport above dock */
+/* Inspector rendered inside tldraw — fixed to viewport (top), above dock */
 .wall-editor-hud-layer {
-  position: fixed;
+  /* Position handled by .wall-editor-hud above; keep this as a no-op layer marker */
   pointer-events: none;
 }
 
